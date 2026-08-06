@@ -1,0 +1,59 @@
+{
+  "schema_version": "research_portfolio_policy_matrix_v1",
+  "profiles": {
+    "urbannav_primary": {
+      "policies": [
+        "shared_python_quality",
+        "research_evidence",
+        "experiment_documentation",
+        "urbannav_benchmark"
+      ],
+      "executable_sources": [
+        "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/AGENTS.md",
+        "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/Agent_part/RouteServer/AGENTS.md",
+        "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/Agent_part/RouteServer/pyproject.toml"
+      ]
+    },
+    "ms_swift_primary": {
+      "policies": [
+        "shared_python_quality",
+        "research_evidence",
+        "experiment_documentation",
+        "ms_swift_native_formatting"
+      ],
+      "executable_sources": [
+        "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/AGENTS.md",
+        "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/setup.cfg",
+        "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/.pre-commit-config.yaml"
+      ]
+    },
+    "integration_workflow": {
+      "policies": [
+        "research_evidence",
+        "experiment_documentation",
+        "cross_repository_release"
+      ],
+      "executable_sources": [
+        "/home/ubuntu/WorkSpace/project/SR/Code/SideWalkNavigation/AGENTS.md",
+        "/home/ubuntu/WorkSpace/project/SR/Code/SideWalkNavigation/workflow/schemas/workflow_v3.schema.json"
+      ]
+    },
+    "reference_read_only": {
+      "policies": [
+        "reference_repository"
+      ],
+      "executable_sources": [
+        "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/policies/reference-repository.md"
+      ]
+    }
+  },
+  "policy_documents": {
+    "shared_python_quality": "policies/python-code-quality.md",
+    "research_evidence": "policies/research-evidence.md",
+    "experiment_documentation": "policies/experiment-documentation.md",
+    "urbannav_benchmark": "policies/benchmark-evaluation.md",
+    "ms_swift_native_formatting": "policies/python-code-quality.md",
+    "cross_repository_release": "policies/research-evidence.md",
+    "reference_repository": "policies/reference-repository.md"
+  }
+}

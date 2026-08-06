@@ -1,0 +1,13 @@
+{
+  "schema_version": "research_portfolio_integration_links_v1",
+  "integrations": [
+    {
+      "id": "sidewalk-navigation",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/SideWalkNavigation/workflow",
+      "status_document": "/home/ubuntu/WorkSpace/project/SR/Code/SideWalkNavigation/workflow/workstreams/reasoning-v4/STATUS.html",
+      "relation": "independent_integration_workflow",
+      "pilot": "reasoning-v4",
+      "portfolio_owns_implementation": false
+    }
+  ]
+}

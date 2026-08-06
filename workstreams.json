@@ -1,0 +1,16 @@
+{
+  "schema_version": "research_portfolio_workstream_index_v1",
+  "active_workstream_id": "core-framework",
+  "workstreams": [
+    {
+      "id": "core-framework",
+      "path": "workstreams/core-framework",
+      "status": "active",
+      "owner_repositories": [
+        "urbannav-sr",
+        "ms-swift"
+      ]
+    }
+  ],
+  "linked_integration_workflows": "integrations/workflows.json"
+}

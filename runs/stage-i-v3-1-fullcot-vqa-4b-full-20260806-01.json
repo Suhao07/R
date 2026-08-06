@@ -1,0 +1,81 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "stage-i-v3-1-fullcot-vqa-4b-full-20260806-01",
+  "workstream_id": "core-framework",
+  "objective": "Train Qwen3.5-4B full on canonical Stage I V3.1 FullCoT, mutually exclusive reasoning-dropout Decision, and accepted VQA with independently normalized token groups.",
+  "status": "planned",
+  "implementation_state": "implemented",
+  "verification_level": "focused_tests_passed",
+  "validation_scope": "full_split",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_i_v3_1_fullcot_vqa_grouped_4b_full_20260806.md",
+  "repository_ids": [
+    "urbannav-sr",
+    "ms-swift"
+  ],
+  "commands": [
+    {
+      "id": "prepare",
+      "cwd": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/code_snapshots/stage_i_v3_1_20260806_01/ms-swift",
+      "command": "RUN_PHASE=prepare examples/sidewalk_nav/train/run_stage_i_v3_1_4b_full.sh"
+    },
+    {
+      "id": "smoke_train",
+      "cwd": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/code_snapshots/stage_i_v3_1_20260806_01/ms-swift",
+      "command": "RUN_PHASE=smoke_train examples/sidewalk_nav/train/run_stage_i_v3_1_4b_full.sh"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_i_v3_1_fullcot_vqa_grouped_4b_full_20260806.md",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "started_receipt",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_v3_1_fullcot_vqa_4b_full_20260806_01/receipts/started.json",
+      "required": true
+    },
+    {
+      "id": "optimizer_smoke_audit",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_v3_1_fullcot_vqa_4b_full_20260806_01/optimizer_smoke/audit.json",
+      "required": true
+    },
+    {
+      "id": "finished_receipt",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_v3_1_fullcot_vqa_4b_full_20260806_01/receipts/finished.json",
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "focused_cross_repo_regression",
+      "required": true,
+      "passed": true,
+      "evidence": "ms-swift Stage I/II focused suite 145/145 and RouteServer focused suite 72/72 passed in the local UrbanNav environment; shell syntax and whitespace checks passed."
+    },
+    {
+      "id": "canonical_v2_source_and_compiler",
+      "required": true,
+      "passed": false,
+      "evidence": "Pending server selection, V1-to-V2 migration, compiler report and real-tokenizer census."
+    },
+    {
+      "id": "finite_grouped_optimizer_smoke",
+      "required": true,
+      "passed": false,
+      "evidence": "Pending 8-GPU two-step smoke with finite reasoning, Decision and VQA losses."
+    },
+    {
+      "id": "formal_training_complete",
+      "required": true,
+      "passed": false,
+      "evidence": "Formal 3-epoch training starts only after the optimizer smoke passes."
+    }
+  ],
+  "known_limitations": [
+    "Training completion does not establish navigation quality; frozen paired direction and VQA evaluation remains required.",
+    "The run uses an uncommitted but receipt-bound code snapshot; commit publication is a separate user-controlled action.",
+    "GPU launch is queued behind the currently authorized EgoWalk annotation jobs and must not preempt them."
+  ]
+}

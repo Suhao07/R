@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CONTEXT.html - Workflow v3 glossary</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#60708a;--line:#ced6e3;--accent:#275dad}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--muted:#a9b8ce;--line:#394861;--accent:#8ab4ff}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}
+    main{max-width:980px;margin:auto;padding:32px 20px 64px}header,section,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+    .guidance{color:var(--muted)}.value{border-left:3px solid var(--accent);padding-left:12px}dt{font-weight:700}dd{margin-bottom:10px}
+  </style>
+</head>
+<body data-workflow-doc="CONTEXT" data-schema-version="3" data-template-status="canonical">
+<main>
+  <header><h1>CONTEXT.html</h1><p>只解释术语，不承担实时规则或状态。</p><div class="field" data-field="instance-status"><p class="value" data-value="true" data-empty="false">canonical-template</p></div></header>
+  <section><h2>基础术语</h2>
+    <dl>
+      <dt>实现状态</dt><dd>代码或文档是否存在，不表示已经验证。</dd>
+      <dt>验证等级</dt><dd>当前证据经过的最强门禁，不表示覆盖范围。</dd>
+      <dt>验证范围</dt><dd>证据来自 fixture、mini、完整 split、冻结 benchmark 或生产 runtime。</dd>
+      <dt>release candidate</dt><dd>已进入发布门禁但尚未满足全部条件的组合，不等于 released。</dd>
+    </dl>
+  </section>
+  <section><h2>自定义术语</h2><div class="field" data-field="custom-terms"><div class="value" data-value="true" data-empty="true"><p>待填写</p></div></div></section>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="true">待填写</p></div></footer>
+</main>
+</body>
+</html>

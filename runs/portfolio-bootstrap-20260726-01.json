@@ -1,0 +1,117 @@
+{
+  "schema_version": "research_portfolio_run_v1",
+  "run_id": "portfolio-bootstrap-20260726-01",
+  "workstream_id": "core-framework",
+  "objective": "Create and structurally validate the research-code portfolio with two primary frameworks, one integration control project and read-only reference repositories.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "static_checked",
+  "validation_scope": "review_subset",
+  "created_at": "2026-07-26",
+  "started_at": "2026-07-26T21:00:00+08:00",
+  "finished_at": "2026-07-26T21:21:40+08:00",
+  "repository_ids": [
+    "urbannav-sr",
+    "ms-swift",
+    "sidewalk-navigation"
+  ],
+  "commands": [
+    {
+      "id": "snapshot",
+      "cwd": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow",
+      "command": "python scripts/portfolio_snapshot.py"
+    },
+    {
+      "id": "validate",
+      "cwd": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow",
+      "command": "python scripts/portfolio_validate.py"
+    },
+    {
+      "id": "doctor",
+      "cwd": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow",
+      "command": "python scripts/portfolio_doctor.py"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "repo_matrix",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/repos.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "policy_matrix",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/policies/policy-matrix.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "policy_migration",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/evidence/policy-migration-20260726.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "repository_snapshot",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/snapshots/repo_snapshot_current.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "workspace_routing",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/AGENTS.md",
+      "required": true,
+      "exists": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "exact_primary_framework_roles",
+      "required": true,
+      "passed": true,
+      "evidence": "repos.json"
+    },
+    {
+      "id": "reference_read_only_default",
+      "required": true,
+      "passed": true,
+      "evidence": "repos.json and policies/reference-repository.md"
+    },
+    {
+      "id": "old_agents_policy_migration",
+      "required": true,
+      "passed": true,
+      "evidence": "evidence/policy-migration-20260726.json"
+    },
+    {
+      "id": "all_portfolio_repositories_snapshotted",
+      "required": true,
+      "passed": true,
+      "evidence": "snapshots/repo_snapshot_current.json"
+    },
+    {
+      "id": "portfolio_validator",
+      "required": true,
+      "passed": true,
+      "evidence": "evidence/portfolio-bootstrap-validation-20260726.json"
+    },
+    {
+      "id": "portfolio_doctor",
+      "required": true,
+      "passed": true,
+      "evidence": "evidence/portfolio-bootstrap-validation-20260726.json"
+    },
+    {
+      "id": "clean_exact_primary_commits",
+      "required": false,
+      "passed": false,
+      "evidence": "snapshots/repo_snapshot_current.json; required for release, not bootstrap validation"
+    }
+  ],
+  "known_limitations": [
+    "bootstrap validation checks portfolio structure and current Git state, not behavior of every repository",
+    "reference repositories retain pre-existing dirty state and were not modified",
+    "primary framework code tests are workstream-specific and are not replaced by the portfolio doctor",
+    "ResearchWorkflow has been initialized as a local Git repository but has no commit or remote"
+  ]
+}

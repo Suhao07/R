@@ -1,0 +1,52 @@
+{
+  "schema_version": "research_portfolio_release_v1",
+  "release_id": "research-workflow-v0.1.0-rc1",
+  "status": "candidate",
+  "created_at": "2026-07-26",
+  "run_ids": [
+    "portfolio-bootstrap-20260726-01"
+  ],
+  "repository_ids": [
+    "urbannav-sr",
+    "ms-swift",
+    "sidewalk-navigation"
+  ],
+  "components": {
+    "urbannav-sr": "0d055c15ab1981149fb7d92229314706c74c7c0a",
+    "ms-swift": "725392025f7b2f3508a35b12759e37576dac7eb1",
+    "sidewalk-navigation": "1ca8d53c8f003720e4ccb5595b79758cc033d942",
+    "research-workflow": null
+  },
+  "gates": [
+    {
+      "id": "portfolio_validator",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "portfolio_doctor",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "clean_exact_primary_commits",
+      "required": true,
+      "passed": false
+    },
+    {
+      "id": "research_workflow_initial_commit",
+      "required": true,
+      "passed": false
+    },
+    {
+      "id": "sidewalk_reasoning_v4_release",
+      "required": false,
+      "passed": false
+    }
+  ],
+  "known_limitations": [
+    "candidate only; no commit, tag, push or release action has occurred",
+    "portfolio structural validation does not replace main-framework code tests",
+    "SideWalk Reasoning V4 rc1 remains rejected by its own semantic and cleanliness gates"
+  ]
+}

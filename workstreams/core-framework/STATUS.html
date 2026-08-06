@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Core Framework Portfolio STATUS.html</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--line:#ced6e3;--accent:#275dad}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--line:#394861;--accent:#8ab4ff}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}
+    main{max-width:1040px;margin:auto;padding:32px 20px 64px}header,section,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+    .value{border-left:3px solid var(--accent);padding-left:12px}
+  </style>
+</head>
+<body data-workflow-doc="STATUS" data-schema-version="3" data-template-status="active">
+<main>
+  <header><h1>Core Framework Portfolio Status</h1><p>整个 /Code 组合层的实时恢复入口。</p><div class="field" data-field="instance-status"><p class="value" data-value="true" data-empty="false">active-instance</p></div></header>
+  <section><h2>锚点</h2>
+    <div class="field" data-field="project"><p class="value" data-value="true" data-empty="false">ResearchWorkflow：Urban-Nav-SR + ms-swift 双主框架组合层</p></div>
+    <div class="field" data-field="workstream-id"><p class="value" data-value="true" data-empty="false">core-framework</p></div>
+    <div class="field" data-field="workspace-entry"><p class="value" data-value="true" data-empty="false">/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow；仓库角色见 repos.json</p></div>
+  </section>
+  <section><h2>三轴状态</h2>
+    <div class="field" data-field="execution-state"><p class="value" data-value="true" data-empty="false">complete</p></div>
+    <div class="field" data-field="implementation-state"><p class="value" data-value="true" data-empty="false">implemented</p></div>
+    <div class="field" data-field="verification-level"><p class="value" data-value="true" data-empty="false">benchmark_validated</p></div>
+    <div class="field" data-field="validation-scope"><p class="value" data-value="true" data-empty="false">full_split</p></div>
+  </section>
+  <section><h2>进展</h2>
+    <div class="field" data-field="current-goal"><p class="value" data-value="true" data-empty="false">用可追溯的实验记录绑定机制诊断 Stage I new-only 4B 在 all-source paired direction test 上的类别收缩，不把已完成的工程执行误报为研究成功。</p></div>
+    <div class="field" data-field="recently-completed"><p class="value" data-value="true" data-empty="false">完成 1,896 条 all-source 训练未见物理 case 的 current/legacy 4B 配对方向评测：两臂覆盖和解析均为 100%，但 current combined strict accuracy 30.64% 低于 legacy 49.68%，研究假设失败。2026-08-06 已将可视化写入实验门禁：每个新训练、生成或正式评测必须在 started receipt 前绑定 visualization_manifest，在 finished receipt 绑定 visualization_index，并记录仅 loopback 的 TensorBoard/导出/review 入口。</p></div>
+    <div class="field" data-field="next-atomic-step"><p class="value" data-value="true" data-empty="false">先对冻结 Stage I epoch 做 Decision view、sampler、active-token 与 prompt-contract 的逐类诊断；在不改变模型的前提下区分数据曝光、target contract 与提示词造成的 stop/长转向坍缩。</p></div>
+    <div class="field" data-field="validation-method"><p class="value" data-value="true" data-empty="false">验证实验模板、record receipt、run 到 record 链接、same-case/media/reference 门禁、1,896/1,896 coverage、model-native strict parser、common-12 metrics、paired correctness 和 exact McNemar。</p></div>
+    <div class="field" data-field="active-run-id"><p class="value" data-value="true" data-empty="false">stage-i-all-source-paired-direction-evaluation-20260805</p></div>
+    <div class="field" data-field="evidence-refs"><ul class="value" data-value="true" data-empty="false">
+      <li>repos.json</li>
+      <li>policies/policy-matrix.json</li>
+      <li>evidence/policy-migration-20260726.json</li>
+      <li>snapshots/repo_snapshot_current.json</li>
+      <li>runs/portfolio-bootstrap-20260726-01.json</li>
+      <li>../SideWalkNavigation/workflow/workstreams/reasoning-v4/STATUS.html</li>
+      <li>templates/EXPERIMENT_RECORD.md</li>
+      <li>policies/experiment-documentation.md</li>
+      <li>scripts/validate_experiment_record.py</li>
+      <li>scripts/experiment_run_receipt.py</li>
+      <li>scripts/experiment_visualization_manifest.py</li>
+      <li>runs/stage-i-all-source-paired-direction-evaluation-20260805.json</li>
+      <li>../ms-swift/docs/Experiments/stage_i_all_source_paired_direction_evaluation_20260805.md</li>
+    </ul></div>
+  </section>
+  <section><h2>阻塞</h2>
+    <div class="field" data-field="blockers"><p class="value" data-value="true" data-empty="false">研究验收被 Stage I current 方向能力退化阻塞：stop recall 3.99%，30 degrees 以上类别召回为零。组合层结构无阻塞；rc1 release 仍受未冻结代码/实验状态和既有 dirty worktree 影响。</p></div>
+    <div class="field" data-field="needs-user-confirmation"><p class="value" data-value="true" data-empty="false">本轮无；不会 commit、push、tag、release 或修改参考仓。</p></div>
+  </section>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-08-06</p></div></footer>
+</main>
+</body>
+</html>

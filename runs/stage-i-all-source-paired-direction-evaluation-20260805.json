@@ -1,0 +1,86 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "stage-i-all-source-paired-direction-evaluation-20260805",
+  "workstream_id": "core-framework",
+  "objective": "Evaluate the new Stage I 4B standalone Decision contract and the legacy 4B FullCoT contract on the same all-source, training-unseen physical cases without selecting a checkpoint from this test.",
+  "status": "failed",
+  "implementation_state": "implemented",
+  "verification_level": "benchmark_validated",
+  "validation_scope": "full_split",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_i_all_source_paired_direction_evaluation_20260805.md",
+  "repository_ids": [
+    "ms-swift",
+    "urbannav-sr"
+  ],
+  "commands": [
+    {
+      "id": "all_source_paired_eval",
+      "cwd": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_joint_4b_full_newonly_20260803/code_repair_20260805/ms-swift",
+      "command": "examples/sidewalk_nav/eval/run_stage_i_all_source_paired_direction_test_8gpu.sh"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_i_all_source_paired_direction_evaluation_20260805.md",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "manifest_report",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_joint_4b_full_newonly_20260803/evaluation/all_source_unseen_paired_1896_v1/paired_test_manifest_report.json",
+      "required": true,
+      "sha256": "6958f40c056cf09ad5ae8aff3c9f3209eca3e89792d669101c0db1415e4cc293"
+    },
+    {
+      "id": "paired_scorecard",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_joint_4b_full_newonly_20260803/evaluation/all_source_unseen_paired_1896_v1/paired_scorecard.json",
+      "required": true,
+      "sha256": "df3f16b8251b42a732c1b5f2b8c417c1b53428e15e1aad238fa71e32a2f801a8"
+    },
+    {
+      "id": "cases",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_joint_4b_full_newonly_20260803/evaluation/all_source_unseen_paired_1896_v1/cases.jsonl",
+      "required": true,
+      "sha256": "d7d26277934625b0b6a9222f6a7dea31db3199fe822d83acf676df3f7be35579"
+    },
+    {
+      "id": "references",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_i_joint_4b_full_newonly_20260803/evaluation/all_source_unseen_paired_1896_v1/references.jsonl",
+      "required": true,
+      "sha256": "36714bf9581bb32c90e4846be5a5f455e2d299b0f3a35b474aedc2ca8841cd99"
+    }
+  ],
+  "gates": [
+    {
+      "id": "same_physical_cases_and_references",
+      "required": true,
+      "passed": true,
+      "evidence": "paired_test_manifest_report.json controlled_variable_policy"
+    },
+    {
+      "id": "media_and_prediction_coverage",
+      "required": true,
+      "passed": true,
+      "evidence": "media_checked=true; current=1896/1896; legacy=1896/1896"
+    },
+    {
+      "id": "model_native_parser_success",
+      "required": true,
+      "passed": true,
+      "evidence": "both parse_success=1.0 under their frozen native contracts"
+    },
+    {
+      "id": "new_stage_i_direction_hypothesis",
+      "required": false,
+      "passed": false,
+      "evidence": "combined strict accuracy delta=-19.04pp; exact McNemar p=4.79e-45"
+    }
+  ],
+  "known_limitations": [
+    "The current and legacy arms intentionally retain their native output contracts, parsers and output budgets; this is a deployment-path comparison, not a pure data-only ablation.",
+    "EgoWalk is an OOD instruction-only slice and is reported separately from SideWalk/Foxglove primary slices.",
+    "FullCoT and VQA generation quality are not measured by this standalone Decision evaluation.",
+    "The remote result artifacts are stored on the private server; SHA256 values were copied into this manifest from the completed evaluator artifacts."
+  ]
+}

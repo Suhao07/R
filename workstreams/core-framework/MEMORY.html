@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Core Framework Portfolio MEMORY.html</title>
+  <style>:root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--line:#ced6e3;--accent:#275dad}@media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--line:#394861;--accent:#8ab4ff}}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}main{max-width:1040px;margin:auto;padding:32px 20px 64px}header,section,article,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}.value{border-left:3px solid var(--accent);padding-left:12px}</style>
+</head>
+<body data-workflow-doc="MEMORY" data-schema-version="3" data-template-status="active">
+<main>
+  <header><h1>Portfolio Decision History</h1><p>只保存影响未来组合治理的决策。</p><div class="field" data-field="instance-status"><p class="value" data-value="true" data-empty="false">active-instance</p></div></header>
+  <section><h2>索引</h2><div class="field" data-field="memory-index"><ul class="value" data-value="true" data-empty="false">
+    <li><a href="#ownership">2026-07-26：双主框架与 reference-by-default。</a></li>
+    <li><a href="#policy-layering">2026-07-26：组合 policy 与机器配置分层。</a></li>
+    <li><a href="#pilot">2026-07-26：SideWalkNavigation 保持独立集成 workstream。</a></li>
+    <li><a href="#visualization-gate">2026-08-06：训练与正式评测的可视化 lifecycle gate。</a></li>
+  </ul></div></section>
+  <article id="ownership" data-entry-id="20260726-portfolio-ownership"><h2>双主框架</h2><p><strong>状态：</strong>有效</p><p><strong>决策：</strong>Urban-Nav-SR 与 ms-swift 是 primary frameworks；SideWalkNavigation 是 integration control；其他登记仓默认 reference read-only。</p><p><strong>原因：</strong>把方法参考与维护责任分开，避免在二十余仓中产生多份项目实现。</p></article>
+  <article id="policy-layering" data-entry-id="20260726-policy-layering"><h2>规则分层</h2><p><strong>状态：</strong>有效</p><p><strong>决策：</strong>组合层保存共享代码质量和研究证据底线，仓库本地 AGENTS 保存领域规则，setup/pre-commit 等机器配置保持最终可执行权威。</p><p><strong>原因：</strong>避免复制 formatter 配置后发生漂移，也避免 UrbanNav benchmark 规则污染参考仓。</p></article>
+  <article id="pilot" data-entry-id="20260726-sidewalk-pilot"><h2>SideWalk 试点</h2><p><strong>状态：</strong>有效</p><p><strong>决策：</strong>Reasoning V4 证据继续由 SideWalkNavigation/workflow 管理，组合层只链接其状态和 release 结论。</p><p><strong>原因：</strong>组合层负责路由，不重复具体集成 manifest。</p></article>
+  <article id="visualization-gate" data-entry-id="20260806-experiment-visualization-gate"><h2>实验可视化门禁</h2><p><strong>状态：</strong>有效</p><p><strong>决策：</strong>每个新训练、生成或正式评测必须先写 run 专属 visualization_manifest 并绑定 started receipt；结束时写 visualization_index 并绑定 finished receipt。训练交付 TensorBoard 与恢复证据，评测交付 scorecard、分层图表和可定位 review。</p><p><strong>原因：</strong>使中间过程、导出文件和私有可视化入口可恢复，避免只留下最终标量或事后文档。服务仅监听 loopback，经受信 SSH 本地转发访问。</p></article>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-07-26</p></div></footer>
+</main>
+</body>
+</html>

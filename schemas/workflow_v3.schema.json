@@ -1,0 +1,172 @@
+{
+  "schema_version": "workflow_recovery_v3",
+  "html_documents": {
+    "SPEC": {
+      "required_fields": [
+        "instance-status",
+        "mission",
+        "success-criteria",
+        "goals",
+        "non-goals",
+        "phase-plan",
+        "current-phase",
+        "persistent-constraints",
+        "plan-level-open-questions",
+        "last-verified-at"
+      ]
+    },
+    "STATUS": {
+      "required_fields": [
+        "instance-status",
+        "project",
+        "workstream-id",
+        "workspace-entry",
+        "execution-state",
+        "implementation-state",
+        "verification-level",
+        "validation-scope",
+        "current-goal",
+        "recently-completed",
+        "next-atomic-step",
+        "validation-method",
+        "active-run-id",
+        "evidence-refs",
+        "blockers",
+        "needs-user-confirmation",
+        "last-verified-at"
+      ]
+    },
+    "USER": {
+      "required_fields": [
+        "instance-status",
+        "communication-style",
+        "evidence-requirements",
+        "autonomy-level",
+        "file-editing",
+        "verification-style",
+        "external-action-gates",
+        "security-privacy",
+        "last-verified-at"
+      ]
+    },
+    "MEMORY": {
+      "required_fields": [
+        "instance-status",
+        "memory-index",
+        "last-verified-at"
+      ]
+    },
+    "CONTEXT": {
+      "required_fields": [
+        "instance-status",
+        "custom-terms",
+        "last-verified-at"
+      ]
+    }
+  },
+  "enums": {
+    "instance-status": [
+      "canonical-template",
+      "active-instance",
+      "archived-instance"
+    ],
+    "execution-state": [
+      "actionable",
+      "in_progress",
+      "waiting_user",
+      "blocked",
+      "waiting_external",
+      "validating",
+      "complete_pending_delivery",
+      "complete"
+    ],
+    "implementation-state": [
+      "proposed",
+      "partial",
+      "implemented",
+      "superseded"
+    ],
+    "verification-level": [
+      "unverified",
+      "static_checked",
+      "unit_passed",
+      "smoke_passed",
+      "integration_passed",
+      "benchmark_validated",
+      "released"
+    ],
+    "validation-scope": [
+      "synthetic_fixture",
+      "mini_sample",
+      "review_subset",
+      "full_split",
+      "frozen_benchmark",
+      "production_runtime"
+    ],
+    "run-status": [
+      "planned",
+      "running",
+      "passed",
+      "failed",
+      "blocked",
+      "cancelled"
+    ],
+    "release-status": [
+      "draft",
+      "candidate",
+      "rejected",
+      "released",
+      "superseded"
+    ],
+    "claim-status": [
+      "proposed",
+      "supported",
+      "frozen",
+      "retracted"
+    ]
+  },
+  "manifests": {
+    "repo_matrix_required": [
+      "schema_version",
+      "integration_repository",
+      "repositories"
+    ],
+    "run_required": [
+      "schema_version",
+      "run_id",
+      "workstream_id",
+      "objective",
+      "status",
+      "implementation_state",
+      "verification_level",
+      "validation_scope",
+      "repositories",
+      "dataset",
+      "model",
+      "commands",
+      "artifacts",
+      "gates",
+      "known_limitations"
+    ],
+    "release_required": [
+      "schema_version",
+      "release_id",
+      "workstream_id",
+      "status",
+      "repositories",
+      "run_ids",
+      "gates",
+      "known_limitations"
+    ],
+    "claim_required": [
+      "schema_version",
+      "claim_id",
+      "workstream_id",
+      "statement",
+      "status",
+      "evidence_run_ids",
+      "validation_scope",
+      "limitations"
+    ]
+  }
+}

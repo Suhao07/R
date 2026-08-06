@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>STATUS.html - Workflow v3 current state</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#60708a;--line:#ced6e3;--accent:#275dad}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--muted:#a9b8ce;--line:#394861;--accent:#8ab4ff}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}
+    main{max-width:980px;margin:auto;padding:32px 20px 64px}header,section,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+    h1,h2{line-height:1.25}.guidance{color:var(--muted)}.value{border-left:3px solid var(--accent);padding-left:12px}
+  </style>
+</head>
+<body data-workflow-doc="STATUS" data-schema-version="3" data-template-status="canonical">
+<main>
+  <header>
+    <h1>STATUS.html</h1>
+    <p>一个 workstream 的唯一实时恢复入口。</p>
+    <div class="field" data-field="instance-status"><p class="guidance" data-guidance="true">canonical-template / active-instance / archived-instance</p><p class="value" data-value="true" data-empty="false">canonical-template</p></div>
+  </header>
+  <section><h2>工作流锚点</h2>
+    <div class="field" data-field="project"><p class="guidance" data-guidance="true">项目名称与定位。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="workstream-id"><p class="guidance" data-guidance="true">稳定、唯一的 workstream id。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="workspace-entry"><p class="guidance" data-guidance="true">实际工作入口。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+  </section>
+  <section><h2>三轴状态</h2>
+    <div class="field" data-field="execution-state"><p class="guidance" data-guidance="true">当前执行状态。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="implementation-state"><p class="guidance" data-guidance="true">proposed / partial / implemented / superseded</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="verification-level"><p class="guidance" data-guidance="true">证据成熟度，不等于执行状态。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="validation-scope"><p class="guidance" data-guidance="true">证据覆盖范围。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+  </section>
+  <section><h2>当前进展</h2>
+    <div class="field" data-field="current-goal"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="recently-completed"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="next-atomic-step"><p class="guidance" data-guidance="true">唯一、具体、可立即执行。</p><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="validation-method"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="active-run-id"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="evidence-refs"><ul class="value" data-value="true" data-empty="true"><li>待填写</li></ul></div>
+  </section>
+  <section><h2>阻塞与确认</h2>
+    <div class="field" data-field="blockers"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+    <div class="field" data-field="needs-user-confirmation"><p class="value" data-value="true" data-empty="true">待填写</p></div>
+  </section>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="true">待填写</p></div></footer>
+</main>
+</body>
+</html>

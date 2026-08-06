@@ -1,0 +1,71 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "stage-ii-cfm-v2-q-matrix-smoke-20260805-01",
+  "workstream_id": "core-framework",
+  "objective": "Verify that Stage II CFM V2 reasoning-dropout routes train, checkpoint, restore and run paired target-free inference for Q=4,8,16 with fixed T=32,A=3.",
+  "status": "planned",
+  "implementation_state": "implemented",
+  "verification_level": "unit_passed",
+  "validation_scope": "mini_sample",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
+  "repository_ids": [
+    "urbannav-sr",
+    "ms-swift"
+  ],
+  "commands": [
+    {
+      "id": "q_matrix_smoke",
+      "cwd": "/mnt/volumes/base-base-ali-sh-mix/suh/UrbanNavigation/ms-swift",
+      "command": "examples/sidewalk_nav/train/run_stage_ii_cfm_v2_q_matrix_smoke.sh"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "started_receipt",
+      "path": "/mnt/volumes/mind-eb-ali-sh/suh/UrbanNavigation/benchmark_runs/stage_ii_cfm_v2_q_matrix_gpu_smoke_20260805_01/receipts/started.json",
+      "required": true
+    },
+    {
+      "id": "finished_receipt",
+      "path": "/mnt/volumes/mind-eb-ali-sh/suh/UrbanNavigation/benchmark_runs/stage_ii_cfm_v2_q_matrix_gpu_smoke_20260805_01/receipts/finished.json",
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "canonical_route_and_tokenizer_census",
+      "required": true,
+      "passed": true,
+      "evidence": "Five real Foxglove train parents produce ten paired routes; Q=4,8,16 real tokenizer census passed with zero LM target tokens."
+    },
+    {
+      "id": "finite_two_step_optimizer",
+      "required": true,
+      "passed": false,
+      "evidence": "Pending GPU smoke."
+    },
+    {
+      "id": "checkpoint_sidecar_roundtrip",
+      "required": true,
+      "passed": false,
+      "evidence": "Pending GPU smoke."
+    },
+    {
+      "id": "same_checkpoint_paired_inference",
+      "required": true,
+      "passed": false,
+      "evidence": "Pending GPU smoke."
+    }
+  ],
+  "known_limitations": [
+    "This is a five-parent, two-step mechanics smoke and does not establish semantic convergence or choose the best Q.",
+    "The first V2 implementation uses traj_query_only and does not yet include per-control-cycle fast visual memory.",
+    "The remote checkpoint and result artifacts remain on the private persistent server volume."
+  ]
+}

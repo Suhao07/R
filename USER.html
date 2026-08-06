@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Research Portfolio USER.html</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--muted:#60708a;--line:#ced6e3;--accent:#275dad}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--muted:#a9b8ce;--line:#394861;--accent:#8ab4ff}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}
+    main{max-width:980px;margin:auto;padding:32px 20px 64px}header,section,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+    h1,h2{line-height:1.25}.value{border-left:3px solid var(--accent);padding-left:12px}
+  </style>
+</head>
+<body data-workflow-doc="USER" data-schema-version="3" data-template-status="active">
+<main>
+  <header><h1>Research Portfolio USER.html</h1><p>跨研究仓长期有效的协作、证据和授权偏好。</p><div class="field" data-field="instance-status"><p class="value" data-value="true" data-empty="false">active-instance</p></div></header>
+  <section><h2>协作与工程偏好</h2>
+    <div class="field" data-field="communication-style"><p class="value" data-value="true" data-empty="false">默认中文，结论优先；复杂工程任务持续给出关键状态，最终交付自包含并给出精确文件、commit、测试与限制。</p></div>
+    <div class="field" data-field="evidence-requirements"><p class="value" data-value="true" data-empty="false">根据实际代码和落盘产物分析；严格区分 proposed、implemented、smoke、validated 与 released，不把计划或参考仓结果描述成主框架证据。每个实验文档使用统一模板，记录效果好与效果不好的结果，并按时间追加影响实验的用户讨论、决定及未解决项。</p></div>
+    <div class="field" data-field="autonomy-level"><p class="value" data-value="true" data-empty="false">目标和责任边界明确时直接推进；实验结束后由项目负责人主动分析并提出可证伪的下一实验，而不是等待 instructions；参考仓改写、外部数据传输、付费批量调用、昂贵 batch、不可逆动作、push、tag 或 release 前确认。</p></div>
+    <div class="field" data-field="file-editing"><p class="value" data-value="true" data-empty="false">主实现进入 Urban-Nav-SR 或 ms-swift；参考仓默认只读；保留所有已有 dirty worktree，避免无关格式化和跨仓 broad staging。</p></div>
+    <div class="field" data-field="verification-style"><p class="value" data-value="true" data-empty="false">先 targeted tests 和真实小样本，再扩大训练或评测；工作流 doctor 不能替代主仓代码测试，参考方法对比不能替代冻结 benchmark。</p></div>
+  </section>
+  <section><h2>外部与安全</h2>
+    <div class="field" data-field="external-action-gates"><p class="value" data-value="true" data-empty="false">未经明确授权，不向外部服务发送本地媒体、坐标、prompt 或私有 benchmark；模型列表只用于发现，正式调用前需真实请求语义 smoke。</p></div>
+    <div class="field" data-field="security-privacy"><p class="value" data-value="true" data-empty="false">组合层不记录密钥、token、大媒体、原始数据或 checkpoint；只记录必要路径、哈希、计数、来源和权限状态。</p></div>
+  </section>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-08-04</p></div></footer>
+</main>
+</body>
+</html>

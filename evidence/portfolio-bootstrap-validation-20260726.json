@@ -1,0 +1,36 @@
+{
+  "schema_version": "research_portfolio_bootstrap_validation_v1",
+  "validated_at": "2026-07-26T21:21:40+08:00",
+  "run_id": "portfolio-bootstrap-20260726-01",
+  "validator_passed": true,
+  "doctor_passed": true,
+  "inventory": {
+    "repositories": 18,
+    "primary_frameworks": 2,
+    "integration_controls": 1,
+    "reference_repositories": 15
+  },
+  "primary_framework_ids": [
+    "urbannav-sr",
+    "ms-swift"
+  ],
+  "integration_control_ids": [
+    "sidewalk-navigation"
+  ],
+  "preserved_dirty_reference_ids": [
+    "cityseeker",
+    "mobilitybench",
+    "omninav",
+    "sam3",
+    "spotagent",
+    "walkgpt"
+  ],
+  "release_blockers": [
+    "ResearchWorkflow repository has no initial commit and is dirty",
+    "Urban-Nav-SR contains uncommitted workflow-routing instructions",
+    "ms-swift contains uncommitted workflow and formatting instructions",
+    "SideWalkNavigation contains uncommitted integration workflow changes"
+  ],
+  "reference_repositories_modified_by_bootstrap": [],
+  "interpretation": "Portfolio structure, policy coverage and saved/live snapshot consistency passed. This is structural workflow evidence and does not replace repository-specific code tests or release gates."
+}

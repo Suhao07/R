@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Core Framework Portfolio SPEC.html</title>
+  <style>
+    :root{color-scheme:light dark;--bg:#f5f7fb;--card:#fff;--text:#172033;--line:#ced6e3;--accent:#275dad}
+    @media(prefers-color-scheme:dark){:root{--bg:#111827;--card:#182235;--text:#edf3ff;--line:#394861;--accent:#8ab4ff}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.6 system-ui,sans-serif}
+    main{max-width:1040px;margin:auto;padding:32px 20px 64px}header,section,footer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin:14px 0}
+    .value{border-left:3px solid var(--accent);padding-left:12px}
+  </style>
+</head>
+<body data-workflow-doc="SPEC" data-schema-version="3" data-template-status="active">
+<main>
+  <header><h1>Primary Framework Portfolio Plan</h1><p>Urban-Nav-SR 与 ms-swift 双主框架、SideWalkNavigation 集成层及参考方法仓的组合治理。</p><div class="field" data-field="instance-status"><p class="value" data-value="true" data-empty="false">active-instance</p></div></header>
+  <section><h2>使命</h2><div class="field" data-field="mission"><p class="value" data-value="true" data-empty="false">建立整个研究代码工作区的可恢复组合层，让实现责任、参考方法、代码规范、实验事实和跨仓 release 都能回溯到明确 owner、policy、commit 和 evidence。</p></div></section>
+  <section><h2>成功标准</h2><div class="field" data-field="success-criteria"><ul class="value" data-value="true" data-empty="false">
+    <li>Urban-Nav-SR 和 ms-swift 是且仅是 primary frameworks。</li>
+    <li>SideWalkNavigation 作为 integration control 链接，不吸收两主仓实现。</li>
+    <li>所有其他已登记代码/数据仓默认 read-only reference。</li>
+    <li>旧 AGENTS 代码文档、架构、测试与 benchmark 规则具有可审计迁移记录，并保留机器配置权威。</li>
+    <li>全仓 snapshot、validator 和 doctor 可检测路径、角色、policy、commit、dirty state 与状态漂移。</li>
+    <li>正式 run/release 只引用其实际依赖的仓，不因参考仓存在而扩大责任面。</li>
+    <li>每个新训练、生成或正式评测在启动前绑定可视化计划，结束时能导出并复核曲线、scorecard 和定性证据。</li>
+  </ul></div></section>
+  <section><h2>范围</h2>
+    <div class="field" data-field="goals"><ul class="value" data-value="true" data-empty="false">
+      <li>组合层 AGENTS、repo/policy matrix、v3 recovery、snapshot、validator、doctor、run 和 release gate。</li>
+      <li>主框架代码质量与研究证据政策，及参考方法采用/提升流程。</li>
+      <li>链接 SideWalkNavigation 已验证的 Reasoning V4 试点证据。</li>
+    </ul></div>
+    <div class="field" data-field="non-goals"><ul class="value" data-value="true" data-empty="false">
+      <li>不把所有参考仓合并、fork 或统一格式化。</li>
+      <li>不在组合层复制模型、runtime、dataset、benchmark 或 trainer 实现。</li>
+      <li>本轮不修复参考仓既有 dirty state，也不替代主框架 targeted tests。</li>
+      <li>不执行 commit、push、tag 或正式 release。</li>
+    </ul></div>
+  </section>
+  <section><h2>阶段</h2>
+    <div class="field" data-field="phase-plan"><ol class="value" data-value="true" data-empty="false">
+      <li>组合基线：建立根路由、双主框架、集成层与 reference matrix。</li>
+      <li>政策迁移：把旧 AGENTS 工程规则分层写入 portfolio policy 和主仓本地 AGENTS。</li>
+      <li>自动审计：生成全仓快照并运行 validator/doctor。</li>
+      <li>持续使用：新工作先创建 workstream/run，再在责任仓实现与验证。</li>
+      <li>发布治理：只有实际依赖仓的 exact clean commits 和 required gates 全部通过才允许 release。</li>
+    </ol></div>
+    <div class="field" data-field="current-phase"><p class="value" data-value="true" data-empty="false">阶段 3：组合层自动审计与首次 bootstrap run</p></div>
+  </section>
+  <section><h2>持久约束</h2><div class="field" data-field="persistent-constraints"><ul class="value" data-value="true" data-empty="false">
+    <li>主实现只进入 Urban-Nav-SR 或 ms-swift；SideWalkNavigation 只做集成控制。</li>
+    <li>参考仓默认只读，采用时记录 commit、license、target owner 和 compatibility test。</li>
+    <li>机器 formatter/config 优先于组合层 prose；组合层不虚构不存在的工具。</li>
+    <li>保留已有 dirty changes，release 证据只收紧到实际依赖仓。</li>
+    <li>不在 workflow 中保存秘密或大文件。</li>
+    <li>可视化服务只监听 loopback；访问私有训练曲线只使用受信 SSH 本地转发。</li>
+  </ul></div></section>
+  <section><h2>开放问题</h2><div class="field" data-field="plan-level-open-questions"><ul class="value" data-value="true" data-empty="false">
+    <li>ResearchWorkflow 是否建立独立 remote，由用户在本地首批 commit 审阅后决定。</li>
+    <li>下一项参考方法 promotion 应按具体研究任务单独立项，不预先修改参考仓角色。</li>
+  </ul></div></section>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-07-26</p></div></footer>
+</main>
+</body>
+</html>

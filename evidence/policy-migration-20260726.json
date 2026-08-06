@@ -1,0 +1,59 @@
+{
+  "schema_version": "research_policy_migration_evidence_v1",
+  "audited_at": "2026-07-26",
+  "sources": [
+    "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/Agent_part/RouteServer/AGENTS.md",
+    "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/AGENTS.md at commit 725392025f7b2f3508a35b12759e37576dac7eb1",
+    "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/setup.cfg",
+    "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/.pre-commit-config.yaml"
+  ],
+  "migrations": [
+    {
+      "rule_family": "public docstrings and Args/Returns/Raises",
+      "status": "migrated",
+      "target": "policies/python-code-quality.md"
+    },
+    {
+      "rule_family": "dataclass fields, private semantic helpers and mathematical definitions",
+      "status": "migrated",
+      "target": "policies/python-code-quality.md"
+    },
+    {
+      "rule_family": "schema, IO, runner, evaluator, exporter and CLI separation",
+      "status": "migrated",
+      "target": "policies/python-code-quality.md"
+    },
+    {
+      "rule_family": "offline deterministic evaluation and stable-ID matching",
+      "status": "migrated",
+      "target": "policies/benchmark-evaluation.md"
+    },
+    {
+      "rule_family": "acceptable destination and matched-route metric semantics",
+      "status": "migrated_as_urbannav_specific",
+      "target": "policies/benchmark-evaluation.md"
+    },
+    {
+      "rule_family": "targeted tests and non-rank-1 acceptable destination coverage",
+      "status": "migrated",
+      "target": "policies/python-code-quality.md and policies/benchmark-evaluation.md"
+    },
+    {
+      "rule_family": "ms-swift isort, YAPF, flake8 and pre-commit formatting",
+      "status": "registered_without_duplication",
+      "target": "policies/python-code-quality.md",
+      "executable_authority": "ms-swift/setup.cfg and ms-swift/.pre-commit-config.yaml"
+    },
+    {
+      "rule_family": "editing discipline and narrow changes",
+      "status": "migrated",
+      "target": "../AGENTS.md and policies/python-code-quality.md"
+    },
+    {
+      "rule_family": "DO NOT send optional commentary",
+      "status": "not_migrated",
+      "reason": "interaction-style directive is not a code-quality or research-workflow requirement"
+    }
+  ],
+  "result": "shared code-format and engineering rules are now portfolio policies, while executable formatter settings and domain-specific benchmark rules remain in their proper repository scope"
+}

@@ -1,0 +1,297 @@
+{
+  "schema_version": "research_portfolio_repo_matrix_v1",
+  "workspace_root": "/home/ubuntu/WorkSpace/project/SR/Code",
+  "portfolio_root": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow",
+  "primary_framework_ids": [
+    "urbannav-sr",
+    "ms-swift"
+  ],
+  "integration_control_ids": [
+    "sidewalk-navigation"
+  ],
+  "repositories": [
+    {
+      "id": "urbannav-sr",
+      "name": "Urban-Nav-SR",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR",
+      "role": "primary_framework",
+      "git_expected": true,
+      "required": true,
+      "mutation_policy": "owned",
+      "policy_profile": "urbannav_primary",
+      "agent_instructions": "AGENTS.md",
+      "responsibilities": [
+        "navigation agent, tool and route-session runtime",
+        "canonical reasoning and dataset contracts",
+        "annotation, audit, benchmark and evaluation"
+      ]
+    },
+    {
+      "id": "ms-swift",
+      "name": "ms-swift",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift",
+      "role": "primary_framework",
+      "git_expected": true,
+      "required": true,
+      "mutation_policy": "owned",
+      "policy_profile": "ms_swift_primary",
+      "agent_instructions": "AGENTS.md",
+      "responsibilities": [
+        "training-view and multimodal manifest adaptation",
+        "loss masks, model training and checkpoint sidecars",
+        "inference, model evaluation and bundle export"
+      ]
+    },
+    {
+      "id": "sidewalk-navigation",
+      "name": "SideWalkNavigation",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/SideWalkNavigation",
+      "role": "integration_control",
+      "git_expected": true,
+      "required": true,
+      "mutation_policy": "integration_only",
+      "policy_profile": "integration_workflow",
+      "agent_instructions": "AGENTS.md",
+      "responsibilities": [
+        "SideWalk cross-repository pins and recovery state",
+        "integration smoke, evidence and release composition"
+      ]
+    },
+    {
+      "id": "cityseeker",
+      "name": "CitySeeker",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/CitySeeker",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference urban-navigation data and method"
+      ]
+    },
+    {
+      "id": "citywalker",
+      "name": "CityWalker",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/CityWalker",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference web-scale urban navigation method"
+      ]
+    },
+    {
+      "id": "egowalk-dataset",
+      "name": "EgoWalk Dataset",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/egowalk-dataset",
+      "role": "reference_dataset",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference dataset tooling and provenance"
+      ]
+    },
+    {
+      "id": "frodobots-2k",
+      "name": "FrodoBots-2K",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/FrodoBots-2K",
+      "role": "reference_dataset",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference dataset description and tooling"
+      ]
+    },
+    {
+      "id": "internnav",
+      "name": "InternNav",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/InternNav",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference navigation framework"
+      ]
+    },
+    {
+      "id": "lara-vla",
+      "name": "LaRA-VLA",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/LaRA-VLA",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference vision-language-action method"
+      ]
+    },
+    {
+      "id": "map-it-anywhere",
+      "name": "MapItAnywhere",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/MapItAnywhere",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference mapping and map-prediction method"
+      ]
+    },
+    {
+      "id": "mobilitybench",
+      "name": "MobilityBench",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/MobilityBench",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference route-planning benchmark"
+      ]
+    },
+    {
+      "id": "omninav",
+      "name": "OmniNav",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/OmniNav",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference exploration and VLN framework"
+      ]
+    },
+    {
+      "id": "omnivla",
+      "name": "OmniVLA",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/OmniVLA",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference omni-modal VLA method"
+      ]
+    },
+    {
+      "id": "sam3",
+      "name": "SAM 3",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/sam3",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference visual segmentation foundation component"
+      ]
+    },
+    {
+      "id": "citynav",
+      "name": "Sparsely-Grounded-Long-Range-Navigation",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/Sparsely-Grounded-Long-Range-Navigation",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference sparsely grounded city-navigation method"
+      ]
+    },
+    {
+      "id": "spotagent",
+      "name": "SpotAgent",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/Spotagent",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference LVLM geolocation and agent-training method"
+      ]
+    },
+    {
+      "id": "tic-vla",
+      "name": "TIC-VLA",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/TIC-VLA",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference VLA method"
+      ]
+    },
+    {
+      "id": "walkgpt",
+      "name": "WalkGPT",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/WalkGPT",
+      "role": "reference_method",
+      "git_expected": true,
+      "required": false,
+      "mutation_policy": "read_only_by_default",
+      "policy_profile": "reference_read_only",
+      "agent_instructions": null,
+      "responsibilities": [
+        "reference pedestrian-assistance navigation method"
+      ]
+    }
+  ],
+  "unmanaged_workspace_entries": [
+    {
+      "path": "benchresults",
+      "reason": "evaluation artifacts, not a source repository"
+    },
+    {
+      "path": "review_outputs",
+      "reason": "generated review and run artifacts"
+    },
+    {
+      "path": "Sam",
+      "reason": "unversioned support directory; not admitted as a portfolio repository"
+    },
+    {
+      "path": "Tools",
+      "reason": "unversioned local utilities; promote explicitly before governance"
+    }
+  ],
+  "forbidden_inventory_entries": [
+    "key.txt",
+    "llm_full.txt",
+    ".venv",
+    ".git",
+    ".agents",
+    ".codex"
+  ]
+}

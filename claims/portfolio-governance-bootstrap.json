@@ -1,0 +1,14 @@
+{
+  "schema_version": "research_portfolio_claim_v1",
+  "claim_id": "portfolio-governance-bootstrap",
+  "statement": "The research-code workspace has an explicit two-primary-framework portfolio, read-only reference policy, recoverable v3 control plane and mechanical repository-state audit.",
+  "status": "supported",
+  "evidence_run_ids": [
+    "portfolio-bootstrap-20260726-01"
+  ],
+  "limitations": [
+    "does not claim that every repository builds or passes tests",
+    "does not claim that dirty primary frameworks are release-ready",
+    "does not change ownership or upstream status of reference repositories"
+  ]
+}
