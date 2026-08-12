@@ -11,6 +11,19 @@ documents:
     - ../../../Urban-Nav-SR/Agent_part/RouteServer/docs
   review_root: ../../../review_outputs
 
+# A run directory following this convention can be uploaded with only
+# --experiment-root.  The reporter still accepts explicit --artifact/--media
+# flags for exceptional files.
+experiment_bundle:
+  markdown: report.md
+  html: report.html
+  manifest: report_manifest.json
+  media_directories:
+    - charts
+    - videos
+    - images
+    - media
+
 artifacts:
   # Provision the real value in the operator environment. This profile is
   # intentionally safe to commit and is not a storage credential.
@@ -26,6 +39,9 @@ tasks:
   evaluate:
     owner_repo: Urban-Nav-SR
     task_type: testing
+    # Keep the repository/commit and dirty-path provenance in Task configuration,
+    # but do not paste full experiment-document diffs into the Web UI script pane.
+    capture_git_diff: false
   review:
     owner_repo: Urban-Nav-SR
     task_type: application

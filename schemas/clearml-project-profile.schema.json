@@ -33,6 +33,16 @@
       },
       "additionalProperties": false
     },
+    "experiment_bundle": {
+      "type": "object",
+      "properties": {
+        "markdown": {"type": "string", "minLength": 1},
+        "html": {"type": "string", "minLength": 1},
+        "manifest": {"type": "string", "minLength": 1},
+        "media_directories": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
     "artifacts": {
       "type": "object",
       "required": ["output_uri", "checkpoint_policy", "review_bundle_policy", "raw_data_policy"],
@@ -54,7 +64,8 @@
           "owner_repo": {"type": "string", "minLength": 1},
           "task_type": {
             "enum": ["training", "testing", "inference", "data_processing", "application", "custom"]
-          }
+          },
+          "capture_git_diff": {"type": "boolean"}
         },
         "additionalProperties": false
       }

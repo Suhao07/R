@@ -51,18 +51,20 @@ the declared profile or endpoint is not ready.
 ## Manual evaluation reporting
 
 Existing evaluator commands remain unchanged. After an evaluation has produced
-its scorecard, run the responsibility-repo reporter explicitly:
+its scorecard, place the outputs in `review_outputs/<experiment_id>/` and run
+the responsibility-repo reporter with the directory:
 
 ```bash
 PYTHONPATH=/home/ubuntu/WorkSpace/project/SR/Code/ms-swift \
 python /home/ubuntu/WorkSpace/project/SR/Code/ms-swift/scripts/sidewalk_nav/clearml_report_eval.py \
   --profile /home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/integrations/srnav-clearml/project-profile.yaml \
   --run-id <stable-run-id> \
-  --summary-json <run-root>/scorecard.json \
-  --artifact rows=<run-root>/rows.jsonl \
-  --visualization-index <run-root>/visualization/visualization_index.json \
-  --linkage-out <run-root>/clearml_task_linkage.json
+  --experiment-root <run-root>
 ```
+
+This automatically reads `report.md`, `report.html`, `report_manifest.json`,
+`scorecard.json`, receipt files, charts, images and videos. Use explicit
+`--artifact`/`--media` only for files outside the convention.
 
 Use `--dry-run` first. It reads the scorecard and writes only a local linkage
 with `task_id: null`; the normal mode requires the operator's local ClearML

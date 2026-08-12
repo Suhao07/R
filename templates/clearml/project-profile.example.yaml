@@ -12,6 +12,12 @@ documents:
     - ../../path/to/docs/Experiments
   review_root: ../../path/to/review_outputs
 
+experiment_bundle:
+  markdown: report.md
+  html: report.html
+  manifest: report_manifest.json
+  media_directories: [charts, videos, images, media]
+
 artifacts:
   # Set CLEARML_DEFAULT_OUTPUT_URI in the machine-local environment.
   output_uri: ${CLEARML_DEFAULT_OUTPUT_URI}

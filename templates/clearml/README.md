@@ -20,10 +20,12 @@ experiment Markdown, or receipt contract.
 5. Copy `report_payload.py.template` beside the adapter. Set optional
    `metric_sources` dotted paths in the profile instead of writing a new
    project-specific uploader.
-6. Run `render_clearml_payload_manifest.py` before any upload. Pass the
-   experiment record, finished receipt, scorecard, visualization manifest and
-   visualization index explicitly; this is a local-only dry-run and does not
-   contact ClearML.
+6. Put each run under the convention in `experiment_bundle/` and run the
+   evaluation reporter with `--experiment-root <run-root>`. It automatically
+   discovers the Markdown, generated HTML, scorecard, receipt, manifest and
+   selected media. `--artifact` and `--media` remain available for exceptional
+   files. `render_clearml_payload_manifest.py` is still the local-only dry-run
+   for the older scattered-file layout.
 7. Start the original command manually through SSH/tmux. GPU Agent and
    Pipeline are later phases.
 
@@ -31,8 +33,9 @@ The generic reporter accepts the same evidence paths and `--media
 title=series=path` selections. Use `--dry-run` first. A real invocation
 creates one Task, connects provenance-only configuration (Git identity,
 dirty-state, command with obvious credential values redacted, fingerprints and
-evidence hashes), uploads only explicitly selected files and reports at most
-`media.max_debug_samples_per_series` samples per series.
+evidence hashes), uploads only the convention-based bundle plus explicit
+overrides, and reports at most `media.max_debug_samples_per_series` samples per
+series.
 
 After the reporter writes `clearml_task_linkage.json`, render the separate
 evidence binding sidecar:

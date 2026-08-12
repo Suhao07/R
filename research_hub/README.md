@@ -16,6 +16,17 @@ python -m research_hub doctor
 预览页。静态首页会内嵌预览 HTML、图片、视频、音频和 PDF；实验 Markdown 的表格、代码块、
 相对本地媒体链接会被渲染为 HTML。
 
+要在线编辑 canonical Markdown，使用 `serve` 打印的带 token URL：
+
+```bash
+python -m research_hub serve --host 127.0.0.1 --port 8765
+```
+
+live 页面会把生成的 Markdown 预览和 HTML artifact 通过 loopback API 提供给 iframe，
+所以不要把 ClearML Artifacts 面板或 `file://` 页面当作在线文件编辑器。ClearML 的
+Artifacts 用于只读保存/下载，HTML 的交互查看应放在 Debug Samples；Research Hub 才
+负责 Markdown 校验、diff、原子保存和备份。
+
 在 Chrome/Edge 中，静态页面的 canonical 实验记录可点击“选择工作区目录”，选择包含
 `ResearchWorkflow` 与 `review_outputs` 的 `Code` 目录后写回。该路径先备份到
 `review_outputs/_research_hub/history/browser-static/` 并做全文冲突检查，但浏览器 File System

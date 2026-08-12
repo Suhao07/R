@@ -42,6 +42,7 @@ ALLOWED_TOP_LEVEL = {
     'clearml_project',
     'network',
     'documents',
+    'experiment_bundle',
     'artifacts',
     'tasks',
     'metrics',
@@ -158,6 +159,20 @@ def validate_profile(
     if not isinstance(review_root, str) or not review_root.strip():
         errors.append('documents.review_root must be a non-empty string')
 
+    bundle = profile.get('experiment_bundle', {})
+    if not isinstance(bundle, dict):
+        errors.append('experiment_bundle must be a mapping')
+        bundle = {}
+    _check_unknown_fields(bundle, {'markdown', 'html', 'manifest', 'media_directories'},
+                          'experiment_bundle', errors)
+    for key in ('markdown', 'html', 'manifest'):
+        if key in bundle:
+            _require_string(bundle, key, 'experiment_bundle', errors)
+    media_directories = bundle.get('media_directories', [])
+    if not isinstance(media_directories, list) or not all(
+            isinstance(item, str) and item.strip() for item in media_directories):
+        errors.append('experiment_bundle.media_directories must be a list of strings')
+
     artifacts = profile.get('artifacts')
     if not isinstance(artifacts, dict):
         errors.append('artifacts must be a mapping')
@@ -189,12 +204,14 @@ def validate_profile(
         if not isinstance(task, dict):
             errors.append(f'tasks.{task_id} must be a mapping')
             continue
-        _check_unknown_fields(task, {'owner_repo', 'task_type'},
+        _check_unknown_fields(task, {'owner_repo', 'task_type', 'capture_git_diff'},
                               f'tasks.{task_id}', errors)
         _require_string(task, 'owner_repo', f'tasks.{task_id}', errors)
         if task.get('task_type') not in TASK_TYPES:
             errors.append(f'tasks.{task_id}.task_type must be one of '
                           f'{sorted(TASK_TYPES)}')
+        if 'capture_git_diff' in task and not isinstance(task['capture_git_diff'], bool):
+            errors.append(f'tasks.{task_id}.capture_git_diff must be boolean')
 
     metrics = profile.get('metrics')
     if not isinstance(metrics, dict) or not metrics:

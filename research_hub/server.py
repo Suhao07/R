@@ -82,6 +82,9 @@ class HubRequestHandler(BaseHTTPRequestHandler):
             if parsed.path.startswith("/api/artifacts/"):
                 self._serve_artifact(unquote(parsed.path.rsplit("/", 1)[-1]))
                 return
+            if parsed.path.startswith("/api/hub-state/"):
+                self._serve_hub_state(unquote(parsed.path[len("/api/hub-state/") :]))
+                return
             if parsed.path.startswith("/api/documents/"):
                 self._json(self.context.documents.get(unquote(parsed.path.rsplit("/", 1)[-1])))
                 return
@@ -232,6 +235,28 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         path = Path(str(record["path"]))
         if path.is_symlink() or not path.is_file() or not is_within(path, self.context.config.artifact_root):
             self._error(HTTPStatus.NOT_FOUND, "artifact is no longer safely available")
+            return
+        _serve_file(self, path)
+
+    def _serve_hub_state(self, relative_path: str) -> None:
+        """Serve one generated Hub preview or vendored asset over loopback HTTP.
+
+        Generated Markdown pages are stored below ``_research_hub``.  Static
+        ``file://`` pages can load those files directly, but the live server
+        needs an explicit safe route so iframe previews do not fall back to a
+        404.  The route is intentionally limited to regular files inside the
+        Hub-owned state directory and rejects traversal/symlink escapes.
+        """
+
+        relative = Path(relative_path)
+        if not relative_path or relative.is_absolute() or ".." in relative.parts:
+            self._error(HTTPStatus.NOT_FOUND, "Hub state file not found")
+            return
+        state_root = self.context.config.state_root.resolve()
+        artifact_root = self.context.config.artifact_root.resolve()
+        path = (artifact_root / relative).resolve(strict=False)
+        if path.is_symlink() or not path.is_file() or not is_within(path, state_root):
+            self._error(HTTPStatus.NOT_FOUND, "Hub state file not found")
             return
         _serve_file(self, path)
 

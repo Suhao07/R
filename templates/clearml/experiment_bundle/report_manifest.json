@@ -1,0 +1,15 @@
+{
+  "schema_version": "clearml_experiment_report_manifest_v1",
+  "sections": {
+    "主要指标": [
+      {"title": "主指标图", "path": "charts/metrics.png"}
+    ],
+    "成功案例": [
+      {"title": "成功案例 001", "path": "images/success_001.png"},
+      {"title": "成功案例视频 001", "path": "videos/success_001.mp4"}
+    ],
+    "失败案例与人工校阅": [
+      {"title": "失败案例 001", "path": "videos/failure_001.mp4"}
+    ]
+  }
+}

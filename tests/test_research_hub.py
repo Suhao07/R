@@ -9,6 +9,7 @@ import threading
 from pathlib import Path
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+from urllib.parse import quote
 
 import pytest
 
@@ -242,6 +243,8 @@ def test_loopback_api_requires_token_and_serves_range(hub_config) -> None:
 
     artifact = hub_config.artifact_root / "sample.txt"
     artifact.write_text("abcdef", encoding="utf-8")
+    html_artifact = hub_config.artifact_root / "report.html"
+    html_artifact.write_text("<html><title>HTML report</title><body>Rendered report</body></html>", encoding="utf-8")
     document_path = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "test.md"
     document_path.write_text(_valid_record(), encoding="utf-8")
     catalog = scan_and_write(hub_config)
@@ -268,6 +271,11 @@ def test_loopback_api_requires_token_and_serves_range(hub_config) -> None:
         with urlopen(request) as response:
             assert response.status == 206
             assert response.read() == b"bcd"
+        html_id = next(item["id"] for item in catalog["artifacts"] if item["relative_path"] == "report.html")
+        with urlopen(base + "/api/artifacts/" + html_id) as response:
+            assert response.status == 200
+            assert response.headers["Content-Type"].startswith("text/html")
+            assert b"Rendered report" in response.read()
         request = Request(base + "/api/reindex", method="POST", data=b"{}", headers={"Content-Type": "application/json"})
         with pytest.raises(HTTPError) as error:
             urlopen(request)
@@ -279,6 +287,14 @@ def test_loopback_api_requires_token_and_serves_range(hub_config) -> None:
         refreshed_document = next(item for item in refreshed["documents"] if item["id"] == document_id)
         assert refreshed_document["rendered_href"].startswith("_research_hub/rendered_documents/")
         assert (hub_config.artifact_root / refreshed_document["rendered_href"]).is_file()
+        rendered_request = Request(
+            base + "/api/hub-state/" + quote(refreshed_document["rendered_href"], safe=""),
+            headers={"X-Research-Hub-Token": "test-token"},
+        )
+        with urlopen(rendered_request) as response:
+            assert response.status == 200
+            assert response.headers["Content-Type"].startswith("text/html")
+            assert b"Test experiment" in response.read()
         request = Request(
             base + "/api/settings",
             method="PUT",
