@@ -1,0 +1,16 @@
+# Copy to the operator's local ClearML configuration; do not commit secrets.
+# The API, web and file services can remain loopback-only and be reached over
+# an SSH tunnel from the training host and browser.
+api {
+    api_server: "http://127.0.0.1:8008"
+    web_server: "http://127.0.0.1:8080"
+    files_server: "http://127.0.0.1:8081"
+}
+
+sdk {
+    development {
+        # Set CLEARML_DEFAULT_OUTPUT_URI in the shell when an output store is
+        # provisioned; leaving this null uses the server's configured default.
+        default_output_uri: null
+    }
+}

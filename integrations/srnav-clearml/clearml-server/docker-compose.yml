@@ -1,0 +1,96 @@
+name: srnav-clearml
+
+# Local-only ClearML Server.  This intentionally omits clearml-agent-services:
+# the first phase reports manually started tasks and never schedules GPU work.
+services:
+  apiserver:
+    image: clearml/server:latest
+    command: ["apiserver"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8008:8008"
+    volumes:
+      - ./state/logs:/var/log/clearml
+      - ./state/config:/opt/clearml/config
+      - ./state/data/fileserver:/mnt/fileserver
+    environment:
+      CLEARML_ELASTIC_SERVICE_HOST: elasticsearch
+      CLEARML_ELASTIC_SERVICE_PORT: "9200"
+      CLEARML_MONGODB_SERVICE_HOST: mongo
+      CLEARML_MONGODB_SERVICE_PORT: "27017"
+      CLEARML_REDIS_SERVICE_HOST: redis
+      CLEARML_REDIS_SERVICE_PORT: "6379"
+      CLEARML_SERVER_DEPLOYMENT_TYPE: linux
+      CLEARML__apiserver__pre_populate__enabled: "true"
+      CLEARML__apiserver__pre_populate__zip_files: /opt/clearml/db-prepopulate.zip
+      CLEARML__apiserver__pre_populate__artifacts_path: /opt/clearml/db-prepopulate
+      CLEARML__apiserver__async_urls_delete__enabled: "true"
+      CLEARML__apiserver__async_urls_delete__fileserver__host: http://fileserver:8081
+    depends_on:
+      - redis
+      - mongo
+      - elasticsearch
+      - fileserver
+    networks: [backend, frontend]
+
+  fileserver:
+    image: clearml/server:latest
+    command: ["fileserver"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8081:8081"
+    volumes:
+      - ./state/logs:/var/log/clearml
+      - ./state/data/fileserver:/mnt/fileserver
+      - ./state/config:/opt/clearml/config
+    networks: [backend, frontend]
+
+  webserver:
+    image: clearml/server:latest
+    command: ["webserver"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      - apiserver
+    networks: [frontend]
+
+  mongo:
+    image: mongo:8.0.15
+    restart: unless-stopped
+    command: ["--setParameter", "diagnosticDataCollectionEnabled=false"]
+    volumes:
+      - ./state/data/mongo_4/db:/data/db
+      - ./state/data/mongo_4/configdb:/data/configdb
+    networks: [backend]
+
+  redis:
+    image: redis:8.2.3
+    restart: unless-stopped
+    volumes:
+      - ./state/data/redis:/data
+    networks: [backend]
+
+  elasticsearch:
+    image: elasticsearch:8.19.9
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      cluster.name: clearml
+      bootstrap.memory_lock: "true"
+      ES_JAVA_OPTS: -Xms2g -Xmx2g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - ./state/data/elastic_7:/usr/share/elasticsearch/data
+    networks: [backend]
+
+networks:
+  backend:
+  frontend:

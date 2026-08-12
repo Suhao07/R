@@ -1,0 +1,85 @@
+schema_version: clearml_project_profile_v1
+project_id: srnav
+clearml_project: SR-Nav
+
+network:
+  server_profile: local_ssh_tunnel
+
+documents:
+  experiment_roots:
+    - ../../../ms-swift/docs/Experiments
+    - ../../../Urban-Nav-SR/Agent_part/RouteServer/docs
+  review_root: ../../../review_outputs
+
+artifacts:
+  # Provision the real value in the operator environment. This profile is
+  # intentionally safe to commit and is not a storage credential.
+  output_uri: ${CLEARML_DEFAULT_OUTPUT_URI}
+  checkpoint_policy: link_only
+  review_bundle_policy: upload_selected
+  raw_data_policy: never_upload
+
+tasks:
+  train:
+    owner_repo: ms-swift
+    task_type: training
+  evaluate:
+    owner_repo: Urban-Nav-SR
+    task_type: testing
+  review:
+    owner_repo: Urban-Nav-SR
+    task_type: application
+
+metrics:
+  train:
+    loss: train/loss
+    learning_rate: train/lr
+    throughput: train/throughput
+  evaluation:
+    l2_at_1s: eval/l2_at_1s
+    l2_at_2s: eval/l2_at_2s
+    coverage: eval/coverage
+    parse_success: eval/parse_success
+    strict: eval/strict
+    current_strict_accuracy: eval/current_strict_accuracy
+    current_macro_f1: eval/current_macro_f1
+    current_parse_success: eval/current_parse_success
+    legacy_strict_accuracy: eval/legacy_strict_accuracy
+    legacy_macro_f1: eval/legacy_macro_f1
+    legacy_parse_success: eval/legacy_parse_success
+    paired_accuracy_delta_current_minus_legacy: eval/paired_accuracy_delta_current_minus_legacy
+    geometry_amde_m: eval/geometry_amde_m
+    geometry_success_coverage: eval/geometry_success_coverage
+    geometry_l2_at_0_5s: eval/geometry_l2_at_0_5s
+    geometry_l2_at_1s: eval/geometry_l2_at_1s
+    geometry_l2_at_2s: eval/geometry_l2_at_2s
+    geometry_l2_at_3s: eval/geometry_l2_at_3s
+    angle_maoe_deg: eval/angle_maoe_deg
+    angle_coverage: eval/angle_coverage
+    latency_mean_sec: eval/latency_mean_sec
+  review:
+    accepted: review/accepted
+    rejected: review/rejected
+
+metric_sources:
+  evaluation:
+    current_strict_accuracy: current.strict_accuracy
+    current_macro_f1: current.macro_f1
+    current_parse_success: current.parse_success
+    legacy_strict_accuracy: legacy.strict_accuracy
+    legacy_macro_f1: legacy.macro_f1
+    legacy_parse_success: legacy.parse_success
+    paired_accuracy_delta_current_minus_legacy: paired.accuracy_delta_current_minus_legacy
+    geometry_amde_m: metric_suites.trajectory_geometry_core_v1.amde_m
+    geometry_success_coverage: metric_suites.trajectory_geometry_core_v1.success_coverage
+    geometry_l2_at_0_5s: metric_suites.trajectory_geometry_core_v1.horizons.0.5s.conditional_l2_m
+    geometry_l2_at_1s: metric_suites.trajectory_geometry_core_v1.horizons.1s.conditional_l2_m
+    geometry_l2_at_2s: metric_suites.trajectory_geometry_core_v1.horizons.2s.conditional_l2_m
+    geometry_l2_at_3s: metric_suites.trajectory_geometry_core_v1.horizons.3s.conditional_l2_m
+    angle_maoe_deg: metric_suites.citywalker_openloop_metrics_v1.angle.maoe_deg
+    angle_coverage: metric_suites.citywalker_openloop_metrics_v1.angle.angle_coverage
+    latency_mean_sec: metric_suites.trajectory_geometry_core_v1.latency_sec.mean
+
+media:
+  max_debug_samples_per_series: 30
+  upload: selected_review_only

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://researchworkflow.local/schemas/clearml-artifact-manifest.schema.json",
+  "title": "ClearML payload manifest",
+  "type": "object",
+  "required": ["schema_version", "project_id", "run_id", "documents", "review_artifacts", "debug_sample_candidates", "required_evidence", "selected_media"],
+  "properties": {
+    "schema_version": {"const": "clearml_payload_manifest_v1"},
+    "project_id": {"type": "string"},
+    "run_id": {"type": "string"},
+    "generated_at": {"type": "string"},
+    "profile_path": {"type": "string"},
+    "documents": {"type": "array"},
+    "review_artifacts": {"type": "array"},
+    "debug_sample_candidates": {"type": "array"},
+    "required_evidence": {"type": "array"},
+    "selected_media": {"type": "array"},
+    "summary": {"type": "object"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,47 @@
+schema_version: clearml_project_profile_v1
+project_id: replace_me
+clearml_project: Replace Me
+
+# Keep API keys, object-storage secrets and private endpoints out of this file.
+# Use the machine-local clearml.conf or environment variables instead.
+network:
+  server_profile: local_ssh_tunnel
+
+documents:
+  experiment_roots:
+    - ../../path/to/docs/Experiments
+  review_root: ../../path/to/review_outputs
+
+artifacts:
+  # Set CLEARML_DEFAULT_OUTPUT_URI in the machine-local environment.
+  output_uri: ${CLEARML_DEFAULT_OUTPUT_URI}
+  checkpoint_policy: link_only
+  review_bundle_policy: upload_selected
+  raw_data_policy: never_upload
+
+tasks:
+  train:
+    owner_repo: replace_me
+    task_type: training
+  evaluate:
+    owner_repo: replace_me
+    task_type: testing
+
+metrics:
+  train:
+    loss: train/loss
+    learning_rate: train/lr
+  evaluation:
+    primary: eval/primary
+    coverage: eval/coverage
+
+# Optional dotted paths into the JSON scorecard passed to the generic
+# post-run reporter. If omitted, the logical metric name is used.
+metric_sources:
+  evaluation:
+    primary: summary.primary
+    coverage: summary.coverage
+
+media:
+  max_debug_samples_per_series: 30
+  upload: selected_review_only

@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://researchworkflow.local/schemas/clearml-project-profile.schema.json",
+  "title": "ClearML project profile",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project_id",
+    "clearml_project",
+    "documents",
+    "artifacts",
+    "tasks",
+    "metrics",
+    "media"
+  ],
+  "properties": {
+    "schema_version": {"const": "clearml_project_profile_v1"},
+    "project_id": {"type": "string", "minLength": 1},
+    "clearml_project": {"type": "string", "minLength": 1},
+    "network": {
+      "type": "object",
+      "properties": {
+        "server_profile": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "documents": {
+      "type": "object",
+      "required": ["experiment_roots", "review_root"],
+      "properties": {
+        "experiment_roots": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "review_root": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": ["output_uri", "checkpoint_policy", "review_bundle_policy", "raw_data_policy"],
+      "properties": {
+        "output_uri": {"type": "string", "minLength": 1},
+        "checkpoint_policy": {"enum": ["link_only", "upload_selected", "upload_all"]},
+        "review_bundle_policy": {"enum": ["link_only", "upload_selected", "upload_all"]},
+        "raw_data_policy": {"const": "never_upload"}
+      },
+      "additionalProperties": false
+    },
+    "tasks": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "required": ["owner_repo", "task_type"],
+        "properties": {
+          "owner_repo": {"type": "string", "minLength": 1},
+          "task_type": {
+            "enum": ["training", "testing", "inference", "data_processing", "application", "custom"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": {"type": "string", "minLength": 1}
+      }
+    },
+    "metric_sources": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {"type": "string", "minLength": 1}
+      }
+    },
+    "media": {
+      "type": "object",
+      "required": ["max_debug_samples_per_series", "upload"],
+      "properties": {
+        "max_debug_samples_per_series": {"type": "integer", "minimum": 1},
+        "upload": {"enum": ["selected_review_only", "all_review_media", "never"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

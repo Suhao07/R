@@ -1,0 +1,15 @@
+# ClearML Task evidence
+
+| Field | Value |
+| --- | --- |
+| Project | `{{clearml_project}}` |
+| Run ID | `{{run_id}}` |
+| Task kind | `{{task_kind}}` |
+| Experiment record | `{{experiment_record}}` |
+| Receipt | `{{receipt}}` |
+| Data manifest | `{{data_manifest}}` |
+| Visualization manifest | `{{visualization_manifest}}` |
+| Validation scope | `{{validation_scope}}` |
+
+The Markdown experiment record and lifecycle receipts remain canonical. This
+description is a navigational index, not a replacement for the record.

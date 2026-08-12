@@ -31,6 +31,10 @@
 - `evidence/`：小型验证记录和迁移记录。
 - `workspace/AGENTS.md`：工作区根路由文件的可版本化镜像。
 - `policies/experiment-documentation.md`：实验目的、setting、正负结果、讨论和下一实验的强制规则。
+- `templates/clearml/`：可复用的 ClearML 无 Agent 观测模板；项目 profile 位于对应 `integrations/` 子目录。
+- `scripts/clearml_server_preflight.py`：只读检查 Docker、profile、本地 config 和 Server/SSH tunnel endpoint，不会启动或上传。
+- `scripts/render_clearml_evidence_binding.py`：把 Task linkage 与实验文档、receipt、scorecard、visualization evidence 生成双向 sidecar，不改 canonical 文件。
+- `scripts/render_clearml_history_import.py`：只检查命令行明确选中的历史 review 目录，生成 `historical_import` 清单，不批量创建 Task 或上传。
 
 实验文档结构检查：
 
@@ -61,3 +65,9 @@ python scripts/portfolio_doctor.py
 
 Doctor 会区分结构或 snapshot 失败、主框架 release blockers，以及参考仓中需要保留的
 dirty state。
+
+## ClearML 第一阶段
+
+先运行现有 SSH/tmux 命令，再用责任仓中的 post-run reporter 显式上报 scorecard、选择性媒体和
+visualization index。GPU Agent、自动队列和 Pipeline 不属于第一阶段。模板验证和本地-only payload
+清单命令见 `CLEARML_OBSERVABILITY_IMPLEMENTATION_CHECKLIST.md`。

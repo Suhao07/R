@@ -1,0 +1,306 @@
+"""Generic post-run ClearML reporter for JSON scorecards and selected files.
+
+Copy this file beside ``clearml_adapter.py`` in a responsibility repository.
+The project profile supplies the metric target names and optional dotted JSON
+paths, so this script normally needs no project-specific code.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+from clearml_adapter import (ClearMLRun, build_run_configuration, load_profile)
+
+
+def dotted_get(value: Any, path: str) -> Any:
+    """Read dotted paths while allowing JSON keys that contain dots."""
+
+    parts = path.split('.')
+    current = value
+    index = 0
+    while index < len(parts):
+        if not isinstance(current, Mapping):
+            return None
+        match = None
+        for end in range(len(parts), index, -1):
+            candidate = '.'.join(parts[index:end])
+            if candidate in current:
+                match = (end, candidate)
+                break
+        if match is None:
+            return None
+        index, key = match
+        current = current[key]
+    return current
+
+
+def parse_named_path(spec: str) -> tuple[str, Path]:
+    """Parse one explicit ``name=path`` artifact."""
+
+    name, separator, raw_path = spec.partition('=')
+    if not separator or not name or not raw_path:
+        raise ValueError(f'Invalid artifact {spec!r}; expected name=path')
+    return name, Path(raw_path).expanduser()
+
+
+def parse_media_spec(spec: str) -> tuple[str, str, Path]:
+    """Parse one ``title=series=path`` debug sample selection."""
+
+    title, separator, rest = spec.partition('=')
+    series, separator2, raw_path = rest.partition('=') if separator else ('',
+                                                                          '',
+                                                                          '')
+    if not title or not separator or not series or not separator2 or not raw_path:
+        raise ValueError(f'Invalid media {spec!r}; expected title=series=path')
+    return title, series, Path(raw_path).expanduser()
+
+
+def _finite_number(value: Any) -> float | None:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    number = float(value)
+    return number if math.isfinite(number) else None
+
+
+def _write_dry_run_linkage(path: Path, profile: Mapping[str, Any], run_id: str,
+                           task_kind: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                'schema_version': 'clearml_task_linkage_v1',
+                'project_id': profile['project_id'],
+                'clearml_project': profile['clearml_project'],
+                'run_id': run_id,
+                'task_kind': task_kind,
+                'task_id': None,
+                'enabled': False,
+                'mode': 'dry_run',
+            },
+            ensure_ascii=False,
+            indent=2,
+        ) + '\n',
+        encoding='utf-8',
+    )
+
+
+def validate_runtime_profile(profile: Mapping[str, Any],
+                             task_kind: str) -> list[str]:
+    """Validate the minimum profile contract needed by this reporter."""
+
+    errors: list[str] = []
+    for field in ('project_id', 'clearml_project', 'tasks', 'artifacts',
+                  'metrics', 'media', 'documents'):
+        if field not in profile:
+            errors.append(f'missing profile field: {field}')
+    artifacts = profile.get('artifacts', {})
+    if not isinstance(
+            artifacts,
+            Mapping) or artifacts.get('raw_data_policy') != 'never_upload':
+        errors.append('artifacts.raw_data_policy must be never_upload')
+    tasks = profile.get('tasks', {})
+    if not isinstance(tasks, Mapping) or task_kind not in tasks:
+        errors.append(f'missing task profile: {task_kind}')
+    metric_group = 'evaluation' if task_kind == 'evaluate' else task_kind
+    metrics = profile.get('metrics', {})
+    if not isinstance(metrics, Mapping) or not isinstance(
+            metrics.get(metric_group), Mapping):
+        errors.append(f'metrics.{metric_group} must be a mapping')
+    media = profile.get('media', {})
+    if not isinstance(media, Mapping) or not isinstance(
+            media.get('max_debug_samples_per_series'), int):
+        errors.append('media.max_debug_samples_per_series must be an integer')
+    return errors
+
+
+def report_payload(
+    *,
+    profile_path: Path,
+    run_id: str,
+    task_kind: str,
+    summary_path: Path,
+    artifact_specs: Sequence[str],
+    linkage_path: Path,
+    experiment_record: Path | None = None,
+    receipt: Path | None = None,
+    visualization_manifest: Path | None = None,
+    visualization_index: Path | None = None,
+    media_specs: Sequence[str] = (),
+    repo_root: Path | None = None,
+    command: Sequence[str] | str | None = None,
+    data_fingerprint: str | None = None,
+    model_fingerprint: str | None = None,
+    validation_scope: str | None = None,
+    description: str | None = None,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Report configured metrics and explicitly selected evidence."""
+
+    if not run_id or any(char.isspace() for char in run_id):
+        raise ValueError(
+            'run_id must be a non-empty string without whitespace')
+    profile = load_profile(profile_path)
+    profile_errors = validate_runtime_profile(profile, task_kind)
+    if profile_errors:
+        raise ValueError('Invalid runtime profile:\n- ' +
+                         '\n- '.join(profile_errors))
+    summary = json.loads(summary_path.read_text(encoding='utf-8'))
+    if not isinstance(summary, Mapping):
+        raise ValueError('summary JSON must be an object')
+
+    selected_artifacts = [parse_named_path(spec) for spec in artifact_specs]
+    selected_artifacts.append(('scorecard', summary_path))
+    for name, path in (
+        ('experiment_record', experiment_record),
+        ('receipt', receipt),
+        ('visualization_manifest', visualization_manifest),
+        ('visualization_index', visualization_index),
+    ):
+        if path is not None:
+            selected_artifacts.append((name, path))
+    for name, path in selected_artifacts:
+        if not path.is_file():
+            raise FileNotFoundError(f'{name}: {path}')
+
+    media_policy = profile['media']['upload']
+    media_limit = int(profile['media']['max_debug_samples_per_series'])
+    selected_media: list[tuple[str, str, Path]] = []
+    media_counts: dict[str, int] = {}
+    for spec in media_specs:
+        title, series, path = parse_media_spec(spec)
+        if media_policy == 'never':
+            raise ValueError(
+                'media selection is forbidden by media.upload=never')
+        if media_counts.get(series, 0) >= media_limit:
+            raise ValueError(
+                f'media series {series!r} exceeds the limit of {media_limit}')
+        if not path.is_file():
+            raise FileNotFoundError(f'{title}/{series}: {path}')
+        selected_media.append((title, series, path))
+        media_counts[series] = media_counts.get(series, 0) + 1
+
+    metric_group = 'evaluation' if task_kind == 'evaluate' else task_kind
+    metric_mapping = profile.get('metrics', {}).get(metric_group, {})
+    source_mapping = profile.get('metric_sources', {}).get(metric_group, {})
+
+    values: dict[str, float] = {}
+    group_values: dict[str, float] = {}
+    if isinstance(metric_mapping, Mapping):
+        for logical_name in metric_mapping:
+            source = (source_mapping.get(logical_name, logical_name)
+                      if isinstance(source_mapping, Mapping) else logical_name)
+            value = _finite_number(dotted_get(summary, str(source)))
+            if value is not None:
+                group_values[logical_name] = value
+    values.update({
+        f'{metric_group}.{key}': value
+        for key, value in group_values.items()
+    })
+
+    if dry_run:
+        _write_dry_run_linkage(linkage_path, profile, run_id, task_kind)
+        return {
+            'mode': 'dry_run',
+            'run_id': run_id,
+            'task_id': None,
+            'metrics': values,
+            'artifact_names': [name for name, _ in selected_artifacts],
+            'media_candidates': len(selected_media),
+        }
+
+    run = ClearMLRun(profile, run_id=run_id, task_kind=task_kind)
+    try:
+        run.start(
+            build_run_configuration(
+                run_id=run_id,
+                repo_root=repo_root,
+                command=command,
+                experiment_record=experiment_record,
+                receipt=receipt,
+                visualization_manifest=visualization_manifest,
+                visualization_index=visualization_index,
+                data_fingerprint=data_fingerprint,
+                model_fingerprint=model_fingerprint,
+                validation_scope=validation_scope,
+            ),
+            description=description,
+        )
+        run.report_mapped_values(metric_group, group_values)
+
+        for name, path in selected_artifacts:
+            run.upload_artifact(name, path)
+        for index, (title, series, path) in enumerate(selected_media):
+            run.report_media(title=title,
+                             series=series,
+                             iteration=index,
+                             path=path)
+        run.write_linkage(linkage_path)
+    except Exception:
+        run.finalize(success=False)
+        raise
+    run.finalize(success=True)
+    return {
+        'mode': 'clearml',
+        'run_id': run_id,
+        'task_id': getattr(run.task, 'id', None),
+        'metrics': values,
+        'artifact_names': [name for name, _ in selected_artifacts],
+        'media_candidates': len(selected_media),
+    }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--profile', required=True, type=Path)
+    parser.add_argument('--run-id', required=True)
+    parser.add_argument('--task-kind', default='evaluate')
+    parser.add_argument('--summary-json', required=True, type=Path)
+    parser.add_argument('--artifact', action='append', default=[])
+    parser.add_argument('--linkage-out', required=True, type=Path)
+    parser.add_argument('--experiment-record', type=Path)
+    parser.add_argument('--receipt', type=Path)
+    parser.add_argument('--visualization-manifest', type=Path)
+    parser.add_argument('--visualization-index', type=Path)
+    parser.add_argument('--media', action='append', default=[])
+    parser.add_argument('--repo-root', type=Path)
+    parser.add_argument('--command')
+    parser.add_argument('--data-fingerprint')
+    parser.add_argument('--model-fingerprint')
+    parser.add_argument('--validation-scope')
+    parser.add_argument('--description')
+    parser.add_argument('--dry-run', action='store_true')
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    result = report_payload(
+        profile_path=args.profile,
+        run_id=args.run_id,
+        task_kind=args.task_kind,
+        summary_path=args.summary_json,
+        artifact_specs=args.artifact,
+        linkage_path=args.linkage_out,
+        experiment_record=args.experiment_record,
+        receipt=args.receipt,
+        visualization_manifest=args.visualization_manifest,
+        visualization_index=args.visualization_index,
+        media_specs=args.media,
+        repo_root=args.repo_root,
+        command=args.command,
+        data_fingerprint=args.data_fingerprint,
+        model_fingerprint=args.model_fingerprint,
+        validation_scope=args.validation_scope,
+        description=args.description,
+        dry_run=args.dry_run,
+    )
+    print(json.dumps(result, ensure_ascii=False, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

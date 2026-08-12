@@ -1,0 +1,335 @@
+"""Minimal ClearML SDK adapter to copy into a project's responsibility repo.
+
+This file intentionally does not import ClearML until ``start`` is called, so
+the existing train/eval code can still run in an environment without the SDK.
+Only rank zero creates and writes the Task in distributed execution.
+"""
+
+from __future__ import annotations
+
+import json
+import math
+import os
+import subprocess
+from pathlib import Path
+from typing import Any, Mapping, Sequence
+
+
+def load_profile(path: str | Path) -> dict[str, Any]:
+    """Load a JSON-compatible YAML profile without contacting ClearML."""
+
+    profile_path = Path(path).expanduser().resolve()
+    raw = profile_path.read_text(encoding='utf-8')
+    try:
+        import yaml  # type: ignore
+    except ImportError:
+        yaml = None
+    value = yaml.safe_load(raw) if yaml is not None else json.loads(raw)
+    if not isinstance(value, dict):
+        raise ValueError(f'ClearML profile must be a mapping: {profile_path}')
+    return value
+
+
+def _is_rank_zero() -> bool:
+    """Return whether this process is allowed to emit ClearML events."""
+
+    return os.environ.get('RANK', os.environ.get('LOCAL_RANK',
+                                                 '0')) in {'', '0', '-1'}
+
+
+def _resolve_output_uri(profile: dict[str, Any]) -> str | None:
+    value = str(profile.get('artifacts', {}).get('output_uri', '')).strip()
+    if not value:
+        return None
+    if value.startswith('${') and value.endswith('}'):
+        return os.environ.get(value[2:-1]) or None
+    return value
+
+
+def _finite_number(value: Any) -> float | None:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def _git_output(repo_root: Path, *args: str) -> str | None:
+    """Read one bounded Git value without changing the responsibility repo."""
+
+    try:
+        result = subprocess.run(
+            ['git', '-C', str(repo_root), *args],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+            timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _safe_command(command: Sequence[str] | str) -> list[str] | str:
+    """Redact obvious credential-bearing command values before Task connect."""
+
+    values = list(command) if not isinstance(command, str) else command.split()
+    redacted: list[str] = []
+    redact_next = False
+    sensitive = ('token', 'password', 'secret', 'api_key', 'access_key')
+    for value in values:
+        lower = value.lower()
+        if redact_next:
+            redacted.append('<redacted>')
+            redact_next = False
+            continue
+        if any(part in lower for part in sensitive):
+            if '=' in value:
+                redacted.append(value.split('=', 1)[0] + '=<redacted>')
+            else:
+                redacted.append(value)
+                redact_next = True
+            continue
+        redacted.append(value)
+    return redacted if not isinstance(command, str) else ' '.join(redacted)
+
+
+def _file_metadata(path: Path) -> dict[str, Any]:
+    """Return path/size/hash metadata without embedding file contents."""
+
+    resolved = path.expanduser().resolve(strict=False)
+    item: dict[str, Any] = {
+        'path': str(resolved),
+        'exists': resolved.is_file()
+    }
+    if not resolved.is_file():
+        return item
+    item['bytes'] = resolved.stat().st_size
+    if item['bytes'] > 8 * 1024 * 1024:
+        item['sha256'] = None
+        item['hash_skipped_reason'] = 'file exceeds 8388608 bytes'
+        return item
+    import hashlib
+    digest = hashlib.sha256()
+    with resolved.open('rb') as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+            digest.update(chunk)
+    item['sha256'] = digest.hexdigest()
+    return item
+
+
+def build_run_configuration(
+    *,
+    run_id: str,
+    repo_root: Path | None = None,
+    command: Sequence[str] | str | None = None,
+    experiment_record: Path | None = None,
+    receipt: Path | None = None,
+    visualization_manifest: Path | None = None,
+    visualization_index: Path | None = None,
+    data_fingerprint: str | None = None,
+    model_fingerprint: str | None = None,
+    validation_scope: str | None = None,
+) -> dict[str, Any]:
+    """Build a small provenance-only Task configuration snapshot."""
+
+    configuration: dict[str, Any] = {'run_id': run_id}
+    if repo_root is not None:
+        root = repo_root.expanduser().resolve(strict=False)
+        status = _git_output(root, 'status', '--porcelain',
+                             '--untracked-files=all')
+        configuration['repository'] = {
+            'root': str(root),
+            'commit': _git_output(root, 'rev-parse', 'HEAD'),
+            'branch': _git_output(root, 'branch', '--show-current'),
+            'dirty': bool(status),
+            'dirty_paths': status.splitlines()[:100] if status else [],
+        }
+    if command is not None:
+        configuration['command'] = _safe_command(command)
+    fingerprints = {}
+    if data_fingerprint:
+        fingerprints['data'] = data_fingerprint
+    if model_fingerprint:
+        fingerprints['model'] = model_fingerprint
+    if fingerprints:
+        configuration['fingerprints'] = fingerprints
+    if validation_scope:
+        configuration['validation_scope'] = validation_scope
+    evidence = {}
+    for name, path in (
+        ('experiment_record', experiment_record),
+        ('receipt', receipt),
+        ('visualization_manifest', visualization_manifest),
+        ('visualization_index', visualization_index),
+    ):
+        if path is not None:
+            evidence[name] = _file_metadata(path)
+    if evidence:
+        configuration['evidence'] = evidence
+    return configuration
+
+
+class ClearMLRun:
+    """Small project-neutral wrapper around ``clearml.Task`` and ``Logger``."""
+    def __init__(self,
+                 profile: dict[str, Any],
+                 *,
+                 run_id: str,
+                 task_kind: str,
+                 task_name: str | None = None):
+        if not run_id or any(char.isspace() for char in run_id):
+            raise ValueError(
+                'run_id must be a non-empty string without whitespace')
+        self.profile = profile
+        self.run_id = run_id
+        self.task_kind = task_kind
+        self.task_name = task_name or f'{task_kind}/{run_id}'
+        self.task = None
+        self.logger = None
+        self._media_counts: dict[str, int] = {}
+
+    @property
+    def enabled(self) -> bool:
+        return _is_rank_zero()
+
+    def start(self,
+              configuration: dict[str, Any] | None = None,
+              *,
+              tags: list[str] | None = None,
+              description: str | None = None) -> 'ClearMLRun':
+        if not self.enabled:
+            return self
+        try:
+            from clearml import Task
+        except ImportError as exc:
+            raise RuntimeError(
+                'ClearML SDK is not installed; install clearml in the runtime environment.'
+            ) from exc
+
+        task = Task.init(
+            project_name=self.profile['clearml_project'],
+            task_name=self.task_name,
+            task_type=self.profile.get('tasks',
+                                       {}).get(self.task_kind,
+                                               {}).get('task_type', 'custom'),
+            tags=tags
+            or [self.profile['project_id'], self.task_kind, self.run_id],
+            reuse_last_task_id=False,
+            output_uri=_resolve_output_uri(self.profile),
+        )
+        self.task = task
+        self.logger = task.get_logger()
+        if description:
+            setter = getattr(task, 'set_comment', None)
+            if not callable(setter):
+                setter = getattr(task, 'set_description', None)
+            if callable(setter):
+                setter(description)
+        if configuration:
+            task.connect(configuration, name='run')
+        return self
+
+    def report_scalar(self, title: str, series: str, value: float,
+                      iteration: int) -> None:
+        number = _finite_number(value)
+        if self.logger is not None and number is not None:
+            self.logger.report_scalar(title=title,
+                                      series=series,
+                                      value=number,
+                                      iteration=iteration)
+
+    def report_single_value(self, name: str, value: float) -> None:
+        number = _finite_number(value)
+        if self.logger is not None and number is not None:
+            self.logger.report_single_value(name=name, value=number)
+
+    def report_mapped_values(self, group: str, values: Mapping[str,
+                                                               Any]) -> None:
+        """Report logical values using the profile's ``group`` mapping."""
+
+        mapping = self.profile.get('metrics', {}).get(group, {})
+        if not isinstance(mapping, Mapping):
+            return
+        for logical_name, value in values.items():
+            target = mapping.get(logical_name)
+            if not isinstance(target, str) or not target:
+                continue
+            title, separator, series = target.partition('/')
+            if not separator:
+                title, series = group, title
+            self.report_scalar(title, series, value, iteration=0)
+
+    def upload_artifact(self, name: str, path: Path) -> None:
+        if self.task is None:
+            return
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        self.task.upload_artifact(name=name, artifact_object=str(path))
+
+    def report_media(self, *, title: str, series: str, iteration: int,
+                     path: Path) -> None:
+        media = self.profile.get('media', {})
+        if isinstance(media, Mapping):
+            if media.get('upload') == 'never':
+                raise ValueError(
+                    'media selection is forbidden by media.upload=never')
+            limit = media.get('max_debug_samples_per_series')
+            if isinstance(limit,
+                          int) and self._media_counts.get(series, 0) >= limit:
+                raise ValueError(
+                    f'media series {series!r} exceeds the limit of {limit}')
+        if self.logger is None:
+            return
+        if not path.is_file():
+            raise FileNotFoundError(path)
+        self.logger.report_media(title=title,
+                                 series=series,
+                                 iteration=iteration,
+                                 local_path=str(path))
+        self._media_counts[series] = self._media_counts.get(series, 0) + 1
+
+    def write_linkage(self, path: Path) -> None:
+        """Write a small local pointer that can be bound into a finished receipt."""
+
+        if not self.enabled:
+            return
+        payload = {
+            'schema_version': 'clearml_task_linkage_v1',
+            'run_id': self.run_id,
+            'project_id': self.profile['project_id'],
+            'clearml_project': self.profile['clearml_project'],
+            'task_id': getattr(self.task, 'id', None),
+            'enabled': self.enabled,
+        }
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) +
+                        '\n',
+                        encoding='utf-8')
+
+    def finalize(self, *, success: bool) -> None:
+        """Best-effort explicit Task terminal state for post-run bridges."""
+
+        if self.task is None:
+            return
+        if not success:
+            marker = getattr(self.task, 'mark_failed', None)
+            if callable(marker):
+                marker()
+            return
+        for method_name in ('close', 'mark_completed'):
+            marker = getattr(self.task, method_name, None)
+            if callable(marker):
+                marker()
+                return
+
+    def __enter__(self) -> 'ClearMLRun':
+        return self.start()
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
+        # ClearML observes process completion. Do not turn an exception into a
+        # successful result or mutate the canonical receipt here.
+        return None
