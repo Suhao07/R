@@ -1,0 +1,33 @@
+{
+  "schema_version": "research_hub_source_registry_v1",
+  "artifact_root": "../review_outputs",
+  "hub_state_relative": "_research_hub",
+  "scan_roots": [
+    {
+      "id": "review_outputs",
+      "path": "../review_outputs",
+      "mode": "read_only_artifacts"
+    },
+    {
+      "id": "ms_swift_experiments",
+      "path": "../ms-swift/docs/Experiments",
+      "mode": "experiment_documents"
+    },
+    {
+      "id": "urbannav_routeserver_docs",
+      "path": "../Urban-Nav-SR/Agent_part/RouteServer/docs",
+      "mode": "experiment_documents"
+    },
+    {
+      "id": "portfolio_evidence",
+      "path": ".",
+      "mode": "portfolio_evidence"
+    }
+  ],
+  "limits": {
+    "json_parse_bytes": 2097152,
+    "jsonl_summary_bytes": 5242880,
+    "queue_read_bytes": 16777216,
+    "attachment_upload_bytes": 268435456
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "schema_version": "research_review_hub_initial_scan_evidence_v1",
+  "workstream_id": "research-review-hub",
+  "recorded_at": "2026-08-11T10:30:00.662490+00:00",
+  "command": "cd ResearchWorkflow && python -m research_hub export",
+  "artifact_root": "/home/ubuntu/WorkSpace/project/SR/Code/review_outputs",
+  "catalog_path": "/home/ubuntu/WorkSpace/project/SR/Code/review_outputs/_research_hub/catalog.json",
+  "static_homepage": "/home/ubuntu/WorkSpace/project/SR/Code/review_outputs/index.html",
+  "summary": {
+    "artifact_count": 1489,
+    "html_count": 55,
+    "json_count": 339,
+    "jsonl_count": 251,
+    "media_count": 768,
+    "restricted_metadata_count": 13,
+    "document_count": 49,
+    "writable_document_count": 10,
+    "run_count": 4,
+    "review_queue_count": 14
+  },
+  "representative_queue": {
+    "path": "citywalker_zeroshot_stage_ii_cfm_validation_20260808_01/slice_audit_v1/diagnosis_template.jsonl",
+    "adapter": "citywalker_diagnosis_v1",
+    "id_field": "sample_id",
+    "sampled_row_count": 67
+  },
+  "limitations": [
+    "Counts are catalog metadata, not a research or benchmark validation claim.",
+    "Large JSONL, checkpoints and archives were not fully parsed or displayed.",
+    "No historic artifact or canonical annotation JSONL was modified by this scan."
+  ]
+}

@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Research Review Hub SPEC</title></head>
+<body data-workflow-doc="SPEC" data-schema-version="3" data-template-status="active">
+<main>
+  <header><h1>Research Review Hub</h1><div class="field" data-field="instance-status"><p data-value="true" data-empty="false">active-instance</p></div></header>
+  <section><h2>使命</h2><div class="field" data-field="mission"><p data-value="true" data-empty="false">为本地研究工作区建立可恢复的实验、产物、媒体与人工审核控制面，同时保持责任仓与历史证据的所有权边界。</p></div></section>
+  <section><h2>成功标准</h2><div class="field" data-field="success-criteria"><ul data-value="true" data-empty="false"><li>可从静态主页发现现有实验记录、run、scorecard 和 review。</li><li>实验 Markdown 可经校验、diff、冲突保护与原子写回更新。</li><li>审核事件可追溯且不改写历史 JSONL。</li></ul></div></section>
+  <section><h2>范围</h2><div class="field" data-field="goals"><ul data-value="true" data-empty="false"><li>本地索引、静态主页、loopback 服务、文档更新、审核 sidecar 与媒体引用。</li></ul></div><div class="field" data-field="non-goals"><ul data-value="true" data-empty="false"><li>不替代训练器、benchmark、annotation canonical contract 或专业标注平台。</li></ul></div></section>
+  <section><h2>阶段</h2><div class="field" data-field="phase-plan"><ol data-value="true" data-empty="false"><li>建立来源注册、索引和静态首页。</li><li>接入本地编辑和审核闭环。</li><li>在真实产物上验证恢复与安全边界。</li></ol></div><div class="field" data-field="current-phase"><p data-value="true" data-empty="false">阶段 1：索引、静态主页与最小本地服务实现。</p></div></section>
+  <section><h2>持久约束</h2><div class="field" data-field="persistent-constraints"><ul data-value="true" data-empty="false"><li>历史 artifacts 只读；大媒体、原始数据和 checkpoint 不进入组合层 Git。</li><li>服务只监听 loopback；不记录密钥或将私有内容发送到外部。</li><li>implementation、verification 与 validation scope 分开呈现。</li></ul></div></section>
+  <section><h2>计划级开放问题</h2><div class="field" data-field="plan-level-open-questions"><ul data-value="true" data-empty="false"><li>MLflow、FiftyOne、Label Studio 的适配只在核心文件工作流稳定后单独立项。</li></ul></div></section>
+  <footer><div class="field" data-field="last-verified-at"><p data-value="true" data-empty="false">2026-08-11</p></div></footer>
+</main>
+</body>
+</html>

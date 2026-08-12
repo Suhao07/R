@@ -1,0 +1,308 @@
+"""Focused tests for the local research management and review control plane."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+import threading
+from pathlib import Path
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+import pytest
+
+PORTFOLIO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PORTFOLIO_ROOT))
+
+from research_hub.catalog import load_catalog, scan_and_write, search_catalog
+from research_hub.config import load_config, read_source_registry, sha256_file, write_source_registry
+from research_hub.documents import DocumentConflictError, DocumentError, DocumentStore
+from research_hub.frontend import render_index
+from research_hub.rendering import render_document_pages
+from research_hub.reviews import ReviewStore
+from research_hub.server import make_server
+
+
+def _valid_record() -> str:
+    """Return the smallest record accepted by the existing structural validator."""
+
+    return """# Test experiment
+
+experiment_record_version: 1
+
+## 实验元数据
+
+| 字段 | 记录 |
+| --- | --- |
+| 实验 ID | `test-experiment` |
+| 状态 | `planned` |
+
+## 实验的目的
+
+验证 Hub 文档保护。
+
+## 实验的 setting
+
+### 可视化与导出计划
+
+N/A，文档测试不启动运行。
+
+## 记录实验结果
+
+### 可视化与产物
+
+N/A，文档测试没有产物。
+
+## 分析实验结果，可能的原因
+
+inconclusive。
+
+## 用户讨论与决策记录
+
+| 时间 | 用户讨论/关注点 | 最终决定 | 对实验的影响 | 未解决问题 |
+| --- | --- | --- | --- | --- |
+| `2026-08-11` | Hub test | 采用 | 验证写回 | 无 |
+
+## 接下来要做的实验
+
+| 优先级 | 下一实验 | 假设 | 唯一主要变量 | 所需证据 | 通过/停止条件 | 依赖或授权 |
+| --- | --- | --- | --- | --- | --- | --- |
+| P0 | save test | 写回安全 | 文本 | diff | 保存成功 | 无 |
+"""
+
+
+@pytest.fixture()
+def hub_config(tmp_path: Path):
+    """Build a disposable workspace that follows the real source registry layout."""
+
+    portfolio = tmp_path / "ResearchWorkflow"
+    portfolio.mkdir()
+    review = tmp_path / "review_outputs"
+    review.mkdir()
+    ms_docs = tmp_path / "ms-swift" / "docs" / "Experiments"
+    ms_docs.mkdir(parents=True)
+    route_docs = tmp_path / "Urban-Nav-SR" / "Agent_part" / "RouteServer" / "docs"
+    route_docs.mkdir(parents=True)
+    (portfolio / "runs").mkdir()
+    status = portfolio / "workstreams" / "test" / "STATUS.html"
+    status.parent.mkdir(parents=True)
+    status.write_text(
+        '<body data-workflow-doc="STATUS"><div data-field="workstream-id"><p data-value="true">test</p></div></body>',
+        encoding="utf-8",
+    )
+    scripts = portfolio / "scripts"
+    scripts.mkdir()
+    (scripts / "validate_experiment_record.py").write_text(
+        "def validate_experiment_record(path):\n"
+        "    text = path.read_text(encoding='utf-8')\n"
+        "    return [] if 'experiment_record_version: 1' in text and '## 接下来要做的实验' in text else ['invalid record']\n",
+        encoding="utf-8",
+    )
+    (portfolio / "research_hub_sources.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "research_hub_source_registry_v1",
+                "artifact_root": "../review_outputs",
+                "hub_state_relative": "_research_hub",
+                "scan_roots": [
+                    {"id": "review_outputs", "path": "../review_outputs", "mode": "read_only_artifacts"},
+                    {"id": "ms_swift_experiments", "path": "../ms-swift/docs/Experiments", "mode": "experiment_documents"},
+                    {"id": "urbannav_routeserver_docs", "path": "../Urban-Nav-SR/Agent_part/RouteServer/docs", "mode": "experiment_documents"},
+                    {"id": "portfolio_evidence", "path": ".", "mode": "portfolio_evidence"},
+                ],
+                "limits": {"json_parse_bytes": 2097152, "jsonl_summary_bytes": 5242880, "queue_read_bytes": 16777216, "attachment_upload_bytes": 1048576},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return load_config(portfolio)
+
+
+def test_scan_catalog_and_static_index(hub_config) -> None:
+    """Scanner should discover reports, canonical records, and immutable queues."""
+
+    review = hub_config.artifact_root
+    (review / "report.html").write_text("<title>Historical review</title>", encoding="utf-8")
+    (review / "checkpoint.safetensors").write_bytes(b"not exposed")
+    queue = review / "diagnosis.jsonl"
+    queue.write_text(
+        json.dumps({"schema_version": "urbannav_benchmark_slice_review_diagnosis_v1", "sample_id": "case-1", "review_status": "pending"}) + "\n",
+        encoding="utf-8",
+    )
+    document = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "test.md"
+    document.write_text(_valid_record() + "\n![example](figure.png)\n\n公式 $E=mc^2$。\n", encoding="utf-8")
+    (document.parent / "figure.png").write_bytes(b"not-a-real-png")
+    catalog = scan_and_write(hub_config)
+    assert catalog["summary"]["html_count"] == 1
+    assert catalog["summary"]["queue_count"] == 1
+    assert catalog["summary"]["writable_document_count"] == 1
+    assert catalog["settings"]["source_registry"]["artifact_root"] == "../review_outputs"
+    assert next(item for item in catalog["artifacts"] if item["relative_path"] == "checkpoint.safetensors")["openable"] is False
+    assert search_catalog(hub_config, "Historical")[0]["title"] == "Historical review"
+    render_document_pages(hub_config, catalog)
+    rendered_document = next(item for item in catalog["documents"] if item["writable"])
+    assert rendered_document["static_content"].startswith("# Test experiment")
+    rendered = hub_config.artifact_root / rendered_document["rendered_href"]
+    assert rendered.is_file()
+    rendered_text = rendered.read_text(encoding="utf-8")
+    assert (document.parent / "figure.png").resolve().as_uri() in rendered_text
+    assert "../vendor/katex/katex.min.js" in rendered_text
+    assert "renderMathInElement" in rendered_text
+    assert (hub_config.state_root / "vendor" / "katex" / "katex.min.css").is_file()
+    static = render_index(catalog, live=False)
+    assert "Historical review" in static
+    assert "static · file:// local preview" in static
+
+
+def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> None:
+    """The settings editor may not expand the Hub beyond the Code workspace."""
+
+    before = read_source_registry(hub_config.portfolio_root)
+    escaped = json.loads(json.dumps(before))
+    escaped["artifact_root"] = "../../outside-review"
+    escaped["scan_roots"][0]["path"] = "../../outside-review"
+    with pytest.raises(ValueError, match="Code workspace"):
+        write_source_registry(hub_config.portfolio_root, escaped)
+    assert read_source_registry(hub_config.portfolio_root) == before
+
+
+def test_document_preview_conflict_and_atomic_save(hub_config) -> None:
+    """Document writeback must reject stale bases and preserve a Hub-owned backup."""
+
+    path = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "test.md"
+    path.write_text(_valid_record(), encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    document_id = next(item["id"] for item in catalog["documents"] if item["writable"])
+    store = DocumentStore(hub_config, b"test-session")
+    current = store.get(document_id)
+    changed = current["content"].replace("验证 Hub 文档保护。", "验证 Hub 文档保护与备份。")
+    preview = store.preview(document_id, current["sha256"], changed)
+    assert preview["ok"] is True
+    path.write_text(current["content"] + "\nexternal change\n", encoding="utf-8")
+    with pytest.raises(DocumentConflictError):
+        store.save(document_id, current["sha256"], changed, preview["preview_token"])
+    refreshed = store.get(document_id)
+    changed = refreshed["content"].replace("external change", "reviewed change")
+    preview = store.preview(document_id, refreshed["sha256"], changed)
+    saved = store.save(document_id, refreshed["sha256"], changed, preview["preview_token"])
+    assert saved["sha256"] == hashlib.sha256(changed.encode("utf-8")).hexdigest()
+    assert (hub_config.artifact_root / saved["backup_path"] / "before.md.gz").is_file()
+
+
+def test_document_symlink_escape_is_rejected(hub_config, tmp_path: Path) -> None:
+    """A catalog entry must not turn into a writable symlink after scanning."""
+
+    path = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "test.md"
+    path.write_text(_valid_record(), encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    document_id = next(item["id"] for item in catalog["documents"] if item["writable"])
+    outside = tmp_path / "outside.md"
+    outside.write_text(_valid_record(), encoding="utf-8")
+    path.unlink()
+    path.symlink_to(outside)
+    with pytest.raises(DocumentError, match="regular file"):
+        DocumentStore(hub_config, b"test-session").get(document_id)
+
+
+def test_review_events_export_without_source_mutation(hub_config) -> None:
+    """Review events should fold into a derived export while source bytes stay exact."""
+
+    source = hub_config.artifact_root / "citywalker_diagnosis.jsonl"
+    source.write_text(
+        json.dumps(
+            {
+                "schema_version": "urbannav_benchmark_slice_review_diagnosis_v1",
+                "sample_id": "case-1",
+                "review_status": "pending",
+                "final_diagnosis": None,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    original = sha256_file(source)
+    catalog = scan_and_write(hub_config)
+    queue_id = catalog["queues"][0]["id"]
+    store = ReviewStore(hub_config)
+    first = store.append(queue_id, "case-1", "pass", "tester", "looks consistent", event_id="9b7c6d04-9575-489d-97ec-2cb4bb4be9ce")
+    assert first["duplicate"] is False
+    duplicate = store.append(queue_id, "case-1", "pass", "tester", "looks consistent", event_id="9b7c6d04-9575-489d-97ec-2cb4bb4be9ce")
+    assert duplicate["duplicate"] is True
+    exported = store.export(queue_id)
+    assert sha256_file(source) == original
+    assert exported["decision_counts"] == {"pass": 1}
+    reviewed = hub_config.artifact_root / exported["reviewed_path"]
+    assert json.loads(reviewed.read_text(encoding="utf-8"))["hub_review"]["decision"] == "pass"
+
+
+def test_loopback_api_requires_token_and_serves_range(hub_config) -> None:
+    """HTTP API must protect writes while allowing immutable artifact range reads."""
+
+    artifact = hub_config.artifact_root / "sample.txt"
+    artifact.write_text("abcdef", encoding="utf-8")
+    document_path = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "test.md"
+    document_path.write_text(_valid_record(), encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    document_id = next(item["id"] for item in catalog["documents"] if item["writable"])
+    try:
+        server = make_server(hub_config, "127.0.0.1", 0, token="test-token")
+    except PermissionError:
+        pytest.skip("sandbox does not permit loopback socket binding")
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        base = f"http://127.0.0.1:{server.server_address[1]}"
+        with urlopen(base + "/api/health") as response:
+            assert json.loads(response.read())["ok"] is True
+        with urlopen(Request(base + "/", method="HEAD")) as response:
+            assert response.status == 200
+            assert int(response.headers["Content-Length"]) > 0
+        with urlopen(base + "/api/settings") as response:
+            settings = json.loads(response.read())
+        assert settings["source_registry"]["artifact_root"] == "../review_outputs"
+        catalog = load_catalog(hub_config)
+        artifact_id = next(item["id"] for item in catalog["artifacts"] if item["relative_path"] == "sample.txt")
+        request = Request(base + "/api/artifacts/" + artifact_id, headers={"Range": "bytes=1-3"})
+        with urlopen(request) as response:
+            assert response.status == 206
+            assert response.read() == b"bcd"
+        request = Request(base + "/api/reindex", method="POST", data=b"{}", headers={"Content-Type": "application/json"})
+        with pytest.raises(HTTPError) as error:
+            urlopen(request)
+        assert error.value.code == 403
+        request.add_header("X-Research-Hub-Token", "test-token")
+        with urlopen(request) as response:
+            assert response.status == 200
+        refreshed = load_catalog(hub_config)
+        refreshed_document = next(item for item in refreshed["documents"] if item["id"] == document_id)
+        assert refreshed_document["rendered_href"].startswith("_research_hub/rendered_documents/")
+        assert (hub_config.artifact_root / refreshed_document["rendered_href"]).is_file()
+        request = Request(
+            base + "/api/settings",
+            method="PUT",
+            data=json.dumps({"source_registry": settings["source_registry"]}).encode("utf-8"),
+            headers={"Content-Type": "application/json", "X-Research-Hub-Token": "test-token"},
+        )
+        with urlopen(request) as response:
+            updated_settings = json.loads(response.read())
+        assert updated_settings["summary"]["writable_document_count"] == 1
+        upload = Request(
+            base + "/api/attachments?document_id=" + document_id,
+            method="POST",
+            data=b"tiny image payload",
+            headers={
+                "Content-Type": "image/png",
+                "X-Filename": "figure.png",
+                "X-Research-Hub-Token": "test-token",
+            },
+        )
+        with urlopen(upload) as response:
+            attachment = json.loads(response.read())
+        assert attachment["markdown_link"].startswith("![figure.png]")
+        assert (hub_config.artifact_root / attachment["path"]).is_file()
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=3)
