@@ -10,6 +10,24 @@
         "urbannav-sr",
         "ms-swift"
       ]
+    },
+    {
+      "id": "research-review-hub",
+      "path": "workstreams/research-review-hub",
+      "status": "superseded",
+      "owner_repositories": [
+        "urbannav-sr",
+        "ms-swift"
+      ]
+    },
+    {
+      "id": "clearml-observability-template",
+      "path": "workstreams/clearml-observability-template",
+      "status": "active",
+      "owner_repositories": [
+        "urbannav-sr",
+        "ms-swift"
+      ]
     }
   ],
   "linked_integration_workflows": "integrations/workflows.json"
