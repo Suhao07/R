@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .experiment_frontend import _LIGHT_STYLE, _LIMO_STYLE
+
 
 def render_index(catalog: dict[str, Any], *, live: bool = False, base_path: str = "") -> str:
     """Render a homepage which functions from both ``file://`` and loopback.
@@ -18,9 +20,47 @@ def render_index(catalog: dict[str, Any], *, live: bool = False, base_path: str 
 
     payload = json.dumps(catalog, ensure_ascii=False, separators=(",", ":")).replace("</", "<\\/")
     normalized_base = "/" + base_path.strip("/") if base_path.strip("/") else ""
-    return (_TEMPLATE.replace("__CATALOG__", payload)
+    page = (_TEMPLATE.replace("__CATALOG__", payload)
             .replace("__MODE__", "live" if live else "static")
             .replace("__BASE_PATH__", json.dumps(normalized_base, ensure_ascii=False)))
+    return _decorate_index_page(page, mode="live" if live else "static")
+
+
+def _decorate_index_page(page: str, *, mode: str) -> str:
+    """Apply the same evidence-first visual language to the Hub homepage."""
+
+    page = page.replace("</style></head>", "</style>" + _LIMO_STYLE + _HOME_STYLE + _LIGHT_STYLE + "</head>", 1)
+    marker = f'<body data-mode="{mode}"><main>'
+    sidebar = """<aside id="homeSidebar" class="limo-sidebar">
+  <div class="side-brand"><span class="brand-mark">RH</span><span><strong>Research Hub</strong><small>科研组合控制面</small></span></div>
+  <div class="nav-kicker">工作台导航</div>
+  <nav id="homeNav" aria-label="Research Hub 导航">
+    <a class="section-nav-link active" href="#" data-home-tab="overview">总览</a>
+    <a class="section-nav-link" href="#" data-home-tab="experiments">实验校阅</a>
+    <a class="section-nav-link" href="#" data-home-tab="documents">实验文档</a>
+    <a class="section-nav-link" href="#" data-home-tab="runs">Runs</a>
+    <a class="section-nav-link" href="#" data-home-tab="artifacts">产物与媒体</a>
+    <a class="section-nav-link" href="#" data-home-tab="queues">审核队列</a>
+    <a class="section-nav-link" href="#" data-home-tab="settings">目录设置</a>
+  </nav>
+  <div id="homeSummary" class="side-summary"><span class="nav-kicker">本地证据控制面</span><div class="muted">只扫描已配置的实验、媒体和 artifact 根目录。</div></div>
+</aside>"""
+    page = page.replace(marker, f'<body data-mode="{mode}">{sidebar}<main class="limo-main">', 1)
+    page = page.replace('<header class="hero"><div>', '<header id="homeHero" class="hero"><div><div class="eyebrow">RESEARCH PORTFOLIO / LOCAL CONTROL PLANE</div>', 1)
+    page = page.replace('</script></body></html>', '</script>' + _HOME_SCRIPT + '</body></html>', 1)
+    return page
+
+
+_HOME_STYLE = r"""
+<style id="research-hub-home-theme">
+.limo-main .hero{min-height:0}.limo-main .hero h1{font-size:clamp(28px,4vw,48px)}.limo-main .panel,.limo-main .card,.limo-main dialog{background:linear-gradient(145deg,rgba(14,34,48,.94),rgba(9,25,37,.94));border-color:var(--line);box-shadow:0 16px 36px rgba(0,0,0,.13)}.limo-main .notice{border-left:3px solid var(--amber);background:rgba(84,61,27,.25);color:var(--ink)}.limo-main .metrics{gap:10px;margin:16px 0}.limo-main .metric{background:rgba(15,39,54,.8);border-color:var(--line)}.limo-main .metric b{color:var(--ink)}.limo-main .toolbar input,.limo-main .toolbar select,.limo-main input,.limo-main textarea{background:#071721;color:var(--ink);border-color:var(--line)}.limo-main .toolbar input::placeholder{color:#6e8b92}.limo-main .tabs{padding-bottom:5px;border-bottom:1px solid var(--line)}.limo-main .tabs button{color:var(--accent-2);border-color:var(--line);background:transparent}.limo-main .tabs button.active{background:var(--accent);color:#06202a;border-color:var(--accent)}.limo-main .tag{background:rgba(11,32,45,.72);border-color:var(--line);color:var(--muted)}.limo-main .tag.ok{color:var(--ok);border-color:rgba(85,217,156,.45)}.limo-main .tag.warn{color:var(--amber);border-color:rgba(240,181,90,.45)}.limo-main pre{background:#06131d;border:1px solid var(--line)}.limo-main code{color:var(--accent-2)}.limo-main .settings-row{border-color:var(--line)}.limo-main .media-box{background:#071721;border-color:var(--line)}.limo-main dialog{color:var(--ink)}@media(max-width:760px){#homeNav{display:flex;gap:3px;overflow:auto}#homeNav .section-nav-link{display:inline-flex;width:auto;border-left:0;border-bottom:2px solid transparent;border-radius:7px;padding:7px 8px}#homeNav .section-nav-link.active{border-bottom-color:var(--accent)}}
+</style>"""
+
+
+_HOME_SCRIPT = r"""
+<script id="research-hub-home-script">
+(()=>{const data=JSON.parse(document.getElementById('catalog-data').textContent),links=[...document.querySelectorAll('[data-home-tab]')],tabs=[...document.querySelectorAll('#tabs [data-tab]')];const sync=tab=>links.forEach(link=>link.classList.toggle('active',link.dataset.homeTab===tab));links.forEach(link=>link.addEventListener('click',event=>{event.preventDefault();const target=tabs.find(button=>button.dataset.tab===link.dataset.homeTab);if(target)target.click();sync(link.dataset.homeTab)}));tabs.forEach(tab=>tab.addEventListener('click',()=>sync(tab.dataset.tab)));const s=data.summary||{};document.getElementById('homeSummary').innerHTML='<span class="nav-kicker">本地证据控制面</span><span class="badge ok">'+(s.experiment_count||0)+' 个实验</span><span class="badge">'+(s.artifact_count||0)+' 个产物</span><span class="badge">'+(s.document_count||0)+' 篇文档</span>'})();
+</script>"""
 
 
 _TEMPLATE = r"""<!doctype html>

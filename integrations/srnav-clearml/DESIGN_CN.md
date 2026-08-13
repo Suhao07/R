@@ -150,6 +150,11 @@ http://127.0.0.1:8080/research/experiments/<run_id>
 HTTP Range；不允许访问 checkpoint、压缩包或目录外文件。保存仍走已有
 `DocumentStore` 的校验、冲突检查和备份，发布则明确创建新的 ClearML 快照。
 
+视觉层参考本地 `LIMO2 项目证据整理 V2.html` 的证据型 dashboard 功能语言，但没有复制其
+业务代码：Research Hub 首页和单实验页现在共用浅色证据面板、固定研究导航、hero 证据
+计数、状态徽章、章节锚点和响应式布局。单实验页额外提供章节媒体导航与图片灯箱；这些
+交互只改变呈现层，不改变 canonical Markdown 的编辑、校验、冲突检查、备份和发布边界。
+
 因此本系统的“Web 实时编辑文件”入口是 Research Hub，而不是 ClearML 的
 Artifacts 面板。使用统一 gateway 时，浏览器直接打开无 token 的入口；gateway
 仅在本机上游请求中注入临时 session token：

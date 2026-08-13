@@ -90,6 +90,11 @@ token。单实验页面按 `run_id` 聚合完整 `report.html`、canonical 文�
 scorecard、章节图片/视频/HTML 和 ClearML Task。视频由 Hub 的 Range 路由提供，
 支持拖动进度条。
 
+首页和单实验工作台采用统一的浅色证据导航：左侧“工作台导航/研究导航”可以切换
+总览、实验文档、Runs、产物和审核队列；单实验页的章节链接会随 manifest 媒体生成，
+图片点击后可在灯箱中放大查看。页面右侧的状态徽章只表示已发现的文件、绑定和
+证据链，不把本地 smoke 结果提升为训练或 benchmark validation。
+
 HTML 的查看方式分两种：
 
 1. 本地 Hub：进入“产物”，筛选 `.html`，点击“预览”或“打开”。服务会通过

@@ -156,6 +156,9 @@ def test_scan_catalog_and_static_index(hub_config) -> None:
     static = render_index(catalog, live=False)
     assert "Historical review" in static
     assert "static · file:// local preview" in static
+    assert 'id="homeSidebar"' in static
+    assert 'data-home-tab="experiments"' in static
+    assert 'research-hub-home-theme' in static
 
 
 def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_config) -> None:
@@ -209,6 +212,10 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert "完整 HTML 校阅报告" in page
     assert '"/research"' in page
     assert "bundle-run-1" in page
+    assert 'id="limoSidebar"' in page
+    assert 'id="sectionNav"' in page
+    assert 'id="mediaLightbox"' in page
+    assert 'research-hub-limo-theme' in page
 
 
 def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> None:
