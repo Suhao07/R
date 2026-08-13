@@ -50,7 +50,9 @@ services:
     command: ["webserver"]
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"
+      # 8080 is reserved for the local unified gateway; ClearML itself is
+      # kept on a loopback-only upstream port.
+      - "127.0.0.1:8082:80"
     depends_on:
       - apiserver
     networks: [frontend]

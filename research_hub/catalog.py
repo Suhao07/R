@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Iterator
-from urllib.parse import quote
+from urllib.parse import parse_qsl, quote, urlsplit, urlunsplit
 
 from .config import HubConfig, SourceRoot, atomic_write_text, is_within, read_source_registry, stable_id
 
@@ -24,6 +24,8 @@ MEDIA_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".mp4", ".webm",
     ".mov", ".mkv", ".mp3", ".wav", ".ogg", ".pdf",
 }
+EXPERIMENT_MEDIA_DIRS = {"charts", "images", "videos", "media"}
+EXPERIMENT_MEDIA_SUFFIXES = MEDIA_SUFFIXES | {".html", ".json", ".csv", ".md"}
 RESTRICTED_SUFFIXES = {".safetensors", ".pt", ".pth", ".ckpt", ".bin", ".tar", ".gz", ".zip"}
 DOCUMENT_STATUS_RE = re.compile(r"^\|\s*状态\s*\|\s*([^|]+?)\s*\|\s*$", re.MULTILINE)
 DOCUMENT_ID_RE = re.compile(r"^\|\s*实验 ID\s*\|\s*`?([^`|]+?)`?\s*\|\s*$", re.MULTILINE)
@@ -107,6 +109,7 @@ def build_catalog(config: HubConfig) -> dict[str, Any]:
         for path in _iter_files(media_root, config.state_root / "media" / "_never_matches"):
             artifacts.append(_describe_artifact(config, hub_media, path))
     runs = _scan_runs(config, warnings)
+    experiments = _scan_experiments(config, documents, warnings)
     repositories = _repository_statuses(config)
     artifacts.sort(key=lambda item: (item["relative_path"], item["id"]))
     documents.sort(key=lambda item: (item["title"].casefold(), item["path"]))
@@ -124,11 +127,12 @@ def build_catalog(config: HubConfig) -> dict[str, Any]:
             "source_registry": read_source_registry(config.portfolio_root),
             "write_mode": "loopback_service_required_for_reindex",
         },
-        "summary": _summary(artifacts, documents, runs, queues),
+        "summary": _summary(artifacts, documents, runs, queues, experiments),
         "repositories": repositories,
         "workstreams": _workstreams(config),
         "documents": documents,
         "runs": runs,
+        "experiments": experiments,
         "artifacts": artifacts,
         "queues": queues,
         "warnings": warnings,
@@ -463,6 +467,268 @@ def _scan_runs(config: HubConfig, warnings: list[str]) -> list[dict[str, Any]]:
     return runs
 
 
+def _scan_experiments(
+    config: HubConfig,
+    documents: list[dict[str, Any]],
+    warnings: list[str],
+) -> list[dict[str, Any]]:
+    """Discover bounded, manifest-first experiment bundles below review outputs.
+
+    A bundle is an isolated directory containing a report/manifest/linkage.  We
+    intentionally do not treat the whole heterogeneous ``review_outputs`` tree
+    as one experiment and only recurse into the four convention media folders.
+    """
+
+    roots: set[Path] = set()
+    artifact_root = config.artifact_root.resolve()
+    state_root = config.state_root.resolve()
+    for filename in ("clearml_task_linkage.json", "report_manifest.json", "report.md"):
+        for path in artifact_root.rglob(filename):
+            resolved = path.resolve(strict=False)
+            if is_within(resolved, state_root) or path.is_symlink() or not path.is_file():
+                continue
+            try:
+                resolved.relative_to(artifact_root)
+            except ValueError:
+                continue
+            roots.add(resolved.parent)
+    for path in artifact_root.rglob("clearml_*linkage*.json"):
+        resolved = path.resolve(strict=False)
+        if is_within(resolved, state_root) or path.is_symlink() or not path.is_file():
+            continue
+        try:
+            resolved.relative_to(artifact_root)
+        except ValueError:
+            continue
+        roots.add(resolved.parent)
+
+    document_by_experiment = {
+        str(item.get("experiment_id")): item
+        for item in documents
+        if item.get("experiment_id")
+    }
+    experiments: list[dict[str, Any]] = []
+    for root in sorted(roots):
+        if root.is_symlink() or not root.is_dir():
+            continue
+        try:
+            relative_root = root.relative_to(artifact_root).as_posix()
+        except ValueError:
+            continue
+        linkage_files = _linkage_files(root)
+        linkage_records = [
+            (path.name, _small_json_object(path, warnings))
+            for path in linkage_files
+        ]
+        primary_linkage = next(
+            (value for name, value in linkage_records if name == "clearml_task_linkage.json"),
+            {},
+        )
+        linkage = primary_linkage or (linkage_records[0][1] if linkage_records else {})
+        task_links = [
+            {
+                "task_id": value.get("task_id"),
+                "run_id": value.get("run_id"),
+                "task_url": value.get("task_url"),
+                "clearml_project": value.get("clearml_project"),
+                "source": name,
+            }
+            for name, value in linkage_records
+            if re.fullmatch(r"[0-9a-fA-F]{32}", str(value.get("task_id", "")))
+        ]
+        evidence_binding = _small_json_object(root / "clearml_evidence_binding.json", warnings)
+        manifest = _small_json_object(root / "report_manifest.json", warnings)
+        report = root / "report.md"
+        report_text = ""
+        if report.is_file() and not report.is_symlink():
+            try:
+                report_text = report.read_text(encoding="utf-8")[:512 * 1024]
+            except (OSError, UnicodeDecodeError):
+                pass
+        report_match = DOCUMENT_ID_RE.search(report_text)
+        experiment_id = (report_match.group(1).strip() if report_match else None)
+        source_run = manifest.get("source_run") if isinstance(manifest, dict) else None
+        run_id = str(linkage.get("run_id") or source_run or experiment_id or relative_root)
+        clearml_binding = evidence_binding.get("clearml", {}) if isinstance(evidence_binding, dict) else {}
+        task_url = linkage.get("task_url") or (clearml_binding.get("url") if isinstance(clearml_binding, dict) else None)
+        if task_url:
+            task_url = _native_task_url(str(task_url))
+            task_base = str(task_url).split("/experiments/", 1)[0]
+            for task_link in task_links:
+                if not task_link.get("task_url"):
+                    task_link["task_url"] = _native_task_url(
+                        f"{task_base}/tasks/{task_link['task_id']}/general"
+                    )
+        canonical = document_by_experiment.get(experiment_id or "")
+        files: list[dict[str, Any]] = []
+        media: list[dict[str, Any]] = []
+        allowed_files = {
+            "report.md", "report.html", "report_manifest.json", "scorecard.json",
+            "scorecard.csv", "receipt.json", "finished_receipt.json",
+            "finished_results_record.json", "visualization_manifest.json",
+            "visualization_index.json", "canonical_experiment_record.md",
+            "clearml_archive_record.json",
+            "clearml_task_linkage.json", "clearml_evidence_binding.json",
+        }
+        for path in sorted(root.iterdir()):
+            if path.is_file() and (
+                path.name in allowed_files
+                or path.name.startswith("clearml_") and "linkage" in path.name and path.suffix == ".json"
+                or path.suffix.lower() == ".html"
+            ) and not path.is_symlink():
+                files.append(_experiment_file(path, root, relative_root))
+        for directory in sorted(EXPERIMENT_MEDIA_DIRS):
+            media_root = root / directory
+            if not media_root.is_dir() or media_root.is_symlink():
+                continue
+            for path in sorted(media_root.rglob("*")):
+                if not path.is_file() or path.is_symlink() or path.suffix.lower() not in EXPERIMENT_MEDIA_SUFFIXES:
+                    continue
+                item = _experiment_file(path, root, relative_root)
+                files.append(item)
+                media.append({
+                    "path": item["path"],
+                    "relative_path": item["relative_path"],
+                    "href": item["href"],
+                    "title": path.name,
+                    "section": directory,
+                    "extension": item["extension"],
+                    "size_bytes": item["size_bytes"],
+                })
+        manifest_media = _manifest_section_media(root, manifest)
+        if manifest_media:
+            selected: list[dict[str, Any]] = []
+            for section, entries in manifest_media.items():
+                for entry in entries:
+                    path = root / entry["path"]
+                    if path.is_file() and not path.is_symlink() and is_within(path, root):
+                        relative = path.relative_to(root).as_posix()
+                        selected.append({
+                            "path": str(path.resolve()),
+                            "relative_path": relative,
+                            "href": quote(f"{relative_root}/{relative}", safe="/"),
+                            "title": entry.get("title") or path.name,
+                            "section": section,
+                            "extension": path.suffix.lower(),
+                            "size_bytes": path.stat().st_size,
+                        })
+            media = selected
+        files.sort(key=lambda item: item["relative_path"])
+        experiments.append({
+            "id": stable_id("experiment", relative_root),
+            "run_id": run_id,
+            "experiment_id": experiment_id,
+            "root": str(root.resolve()),
+            "relative_root": relative_root,
+            "title": _experiment_title(report, run_id),
+            "task_id": linkage.get("task_id"),
+            "task_links": task_links,
+            "clearml_project": linkage.get("clearml_project"),
+            "task_url": task_url,
+            "canonical_document_id": canonical.get("id") if canonical else None,
+            "canonical_document_path": canonical.get("relative_path") if canonical else None,
+            "report_path": str(report.resolve()) if report.is_file() else None,
+            "files": files,
+            "media": media,
+            "manifest": manifest,
+            "linkage": linkage,
+        })
+    experiments.sort(key=lambda item: (str(item.get("title", "")).casefold(), item["id"]))
+    return experiments
+
+
+def _small_json_object(path: Path, warnings: list[str]) -> dict[str, Any]:
+    """Read a small optional bundle metadata object without following symlinks."""
+
+    if not path.is_file() or path.is_symlink() or path.stat().st_size > 2 * 1024 * 1024:
+        return {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        warnings.append(f"experiment_metadata_invalid:{path}:{type(exc).__name__}")
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _linkage_files(root: Path) -> list[Path]:
+    """Return all ClearML linkage sidecars in one bundle.
+
+    A bundle can have multiple immutable Tasks (for example a report, a v2
+    report, and a UI acceptance snapshot).  Each reporter invocation may use
+    a distinct descriptive filename, so indexing only the canonical filename
+    would silently hide valid Task-to-bundle bindings.
+    """
+
+    return sorted(
+        path
+        for path in root.glob("clearml_*linkage*.json")
+        if path.is_file() and not path.is_symlink()
+    )
+
+
+def _native_task_url(value: str) -> str:
+    """Mark embedded ClearML URLs as native to avoid workbench redirects."""
+
+    parsed = urlsplit(value)
+    query = parse_qsl(parsed.query, keep_blank_values=True)
+    if not any(key == "native" for key, _ in query):
+        query.append(("native", "1"))
+    return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "&".join(f"{quote(k)}={quote(v)}" for k, v in query), parsed.fragment))
+
+
+def _experiment_file(path: Path, root: Path, relative_root: str) -> dict[str, Any]:
+    """Describe one safe file in an experiment bundle."""
+
+    relative = path.relative_to(root).as_posix()
+    suffix = path.suffix.lower()
+    return {
+        "path": str(path.resolve()),
+        "relative_path": relative,
+        "href": quote(f"{relative_root}/{relative}", safe="/"),
+        "extension": suffix,
+        "size_bytes": path.stat().st_size,
+        "kind": "html" if suffix == ".html" else "media" if suffix in MEDIA_SUFFIXES else "file",
+    }
+
+
+def _experiment_title(report: Path, run_id: str) -> str:
+    """Read a bounded Markdown H1 title for the experiment card."""
+
+    if report.is_file() and not report.is_symlink():
+        try:
+            match = TITLE_RE.search(report.read_text(encoding="utf-8")[:512 * 1024])
+        except (OSError, UnicodeDecodeError):
+            match = None
+        if match:
+            return match.group(1).strip()
+    return run_id
+
+
+def _manifest_section_media(root: Path, manifest: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
+    """Return safe section media entries from the canonical report manifest."""
+
+    raw_sections = manifest.get("sections") if isinstance(manifest, dict) else None
+    if not isinstance(raw_sections, dict):
+        return {}
+    result: dict[str, list[dict[str, str]]] = {}
+    for section, raw_entries in raw_sections.items():
+        if not isinstance(section, str) or not isinstance(raw_entries, list):
+            continue
+        entries: list[dict[str, str]] = []
+        for raw in raw_entries:
+            if isinstance(raw, str):
+                raw = {"path": raw}
+            if not isinstance(raw, dict) or not isinstance(raw.get("path"), str):
+                continue
+            candidate = Path(raw["path"])
+            if candidate.is_absolute() or ".." in candidate.parts:
+                continue
+            entries.append({"path": candidate.as_posix(), "title": str(raw.get("title") or "")})
+        if entries:
+            result[section] = entries
+    return result
+
+
 def _workstreams(config: HubConfig) -> list[dict[str, Any]]:
     """Extract current state fields from all workstream STATUS documents."""
 
@@ -507,7 +773,11 @@ def _repository_statuses(config: HubConfig) -> list[dict[str, Any]]:
 
 
 def _summary(
-    artifacts: list[dict[str, Any]], documents: list[dict[str, Any]], runs: list[dict[str, Any]], queues: list[dict[str, Any]]
+    artifacts: list[dict[str, Any]],
+    documents: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    queues: list[dict[str, Any]],
+    experiments: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Return dashboard-safe aggregate counts only."""
 
@@ -519,6 +789,7 @@ def _summary(
         "writable_document_count": sum(1 for item in documents if item.get("writable")),
         "run_count": len(runs),
         "queue_count": len(queues),
+        "experiment_count": len(experiments),
         "html_count": kinds.get("html", 0),
     }
 

@@ -21,7 +21,7 @@ ClearML Web UI 当前主要是英文；本系统的中文化重点放在实验�
 
 ```bash
 cd ResearchWorkflow/integrations/srnav-clearml/clearml-server
-./start_local_server.sh
+./start_unified_ui.sh
 ```
 
 访问地址：
@@ -40,6 +40,15 @@ GPU 任务。服务只监听回环地址；远程访问使用：
 ```
 
 然后在本地浏览器打开 `http://127.0.0.1:8080`。
+
+`start_unified_ui.sh` 会让 ClearML Web 使用内部上游 `8082`，并在同一个
+`8080` 入口挂载 Research Hub：
+
+```text
+http://127.0.0.1:8080/                         ClearML Web
+http://127.0.0.1:8080/research/                Research Hub 总览
+http://127.0.0.1:8080/research/experiments/<run_id>  单实验完整校阅
+```
 
 ## 2. 每次实验的目录约定
 
@@ -68,11 +77,18 @@ cd /home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow
 python -m research_hub serve --host 127.0.0.1 --port 8765
 ```
 
-命令会打印一个带临时 `token` 的 URL；必须打开这个 URL，而不是只打开
+直接运行 `serve` 时，命令会打印一个带临时 `token` 的 URL；必须打开这个 URL，而不是只打开
 `file:///home/ubuntu/WorkSpace/project/SR/Code/review_outputs/index.html`。在
 `实验文档` 页点击“编辑”，即可实时修改责任仓 Markdown；预览会渲染表格、代码块
 和 KaTeX 公式，保存前执行模板校验、SHA-256 冲突检查，保存时创建备份并原子替换。
 该服务只监听本机 loopback，token 只对当前服务进程有效。
+
+若使用统一入口，直接打开
+`http://127.0.0.1:8080/research/`，再进入“实验校阅”；无需另开
+`8765` 页面。统一 gateway 在服务端保存临时 Hub token，浏览器不需要填写或复制
+token。单实验页面按 `run_id` 聚合完整 `report.html`、canonical 文档、
+scorecard、章节图片/视频/HTML 和 ClearML Task。视频由 Hub 的 Range 路由提供，
+支持拖动进度条。
 
 HTML 的查看方式分两种：
 
@@ -199,6 +215,25 @@ Hub 和后续人工校阅继续打开。
 需要补充归档文件，创建一个新的 `evidence-archive` Task，并在配置中记录
 原 Task ID。
 
+上传脚本在带 `--experiment-root` 的模式下会自动把 Task description 增加到
+Research Hub 的深链接，例如：
+
+```text
+完整实验校阅工作台：http://127.0.0.1:8080/research/experiments/<run_id>
+```
+
+因此新 Task 的 Description 会保留这个可复制的地址；ClearML 原生 Description 是
+文本框，不负责把 URL 渲染为超链接。统一 gateway 对已绑定 Task 的
+`/projects/<project_id>/tasks/<task_id>/general`（部分版本显示为
+`/experiments/<task_id>/...`）请求返回同一 `8080` 下的统一页面，顶部提供
+“ClearML 原生任务”和“实验校阅工作台”两个按钮，并在 iframe 中切换两种视图。
+需要单独打开原生页面时可加 `native=1` 查询参数。已经创建的旧 Task 也能自动解析，
+不需要后台偷偷改写。
+
+校阅页面中的“发布新 ClearML 快照”是显式动作：它会重新运行责任仓 reporter
+创建新的历史 Task，不覆盖已经完成的 Task。发布需要当前进程已有 ClearML
+凭据（或被忽略的 `clearml-server/local.env`），凭据不会写入页面或 Git。
+
 ## 5. 上传 HTML、图片和视频到 Debug Samples
 
 使用 `--media "标题=系列=路径"`：
@@ -273,6 +308,10 @@ python ResearchWorkflow/scripts/render_clearml_evidence_binding.py \
   --out <run-root>/clearml_evidence_binding.json
 ```
 
+校阅 Hub 不要求 linkage 文件必须使用这个固定文件名；会自动扫描同一实验目录下所有
+`clearml_*linkage*.json`，因此同一份报告的 Markdown、v2、UI acceptance 等多个
+ClearML Task 都会自动跳转到同一个实验工作台。
+
 绑定文件记录 Task ID、Task URL、证据路径、文件大小和 bounded SHA256；它不复制
 实验正文。重要归档应同时保留本地 sidecar 和 ClearML archive Task。
 
@@ -285,6 +324,8 @@ python ResearchWorkflow/scripts/render_clearml_evidence_binding.py \
 - [ ] Task description 中有 validation scope 和 provenance。
 - [ ] Reports 页面能创建、编辑并嵌入 Task 可视化。
 - [ ] 本地 `review_outputs/index.html` 仍能打开并链接到原始校阅材料。
+- [ ] `8080/research/experiments/<run_id>` 能同时显示完整 HTML、canonical 文档、指标和媒体。
+- [ ] 在实验页面修改 Markdown 后，diff/校验/备份/预览均成功。
 
 ## 9. 当前限制
 

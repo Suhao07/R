@@ -118,8 +118,9 @@ Scalars 和 Plots 组合成更适合汇报的中文页面；原 Markdown 继续�
 ### 4.3 本地校阅
 
 `review_outputs/index.html` 不迁移到 ClearML，也不因上传而改变。它继续提供本地
-批量筛选、相对路径媒体和人工标注上下文。ClearML 只接收 operator 明确选择的
-代表性 HTML、图片和视频。
+批量筛选、相对路径媒体和人工标注上下文。新增的 Research Hub unified gateway
+则在同一个 `8080` 网址下提供按 `run_id` 聚合的单实验校阅页；ClearML 只接收
+operator 明确选择的代表性 HTML、图片和视频。
 
 ### 4.4 在线编辑与 HTML 查看边界
 
@@ -132,13 +133,43 @@ Scalars 和 Plots 组合成更适合汇报的中文页面；原 Markdown 继续�
 | ClearML `Task → DEBUG SAMPLES` | 在浏览器中查看 HTML、图片、视频 | 只读查看 |
 | Research Hub live page | 编辑责任仓 Markdown、校验、diff、原子保存、备份 | 可以编辑 canonical Markdown |
 
+### 4.5 单实验统一工作台
+
+`research_hub.catalog` 以 `clearml_task_linkage.json`、任意
+`clearml_*linkage*.json`、`report_manifest.json` 或
+`report.md` 为边界发现 bundle，并把 `report.html`、scorecard、receipt、章节媒体
+和 canonical 文档 ID 聚合为一个 `experiment` 对象。工作台页面为：
+
+```text
+http://127.0.0.1:8080/research/experiments/<run_id>
+```
+
+页面左侧编辑责任仓 Markdown，中间显示完整 `report.html` 和编辑后源文档预览，
+右侧显示 ClearML 状态、指标和文件，下方按 manifest 展示图片、视频和嵌套 HTML。
+媒体经过 `/api/experiments/<id>/files/<path>` 提供，路径限制在 bundle 内并支持
+HTTP Range；不允许访问 checkpoint、压缩包或目录外文件。保存仍走已有
+`DocumentStore` 的校验、冲突检查和备份，发布则明确创建新的 ClearML 快照。
+
 因此本系统的“Web 实时编辑文件”入口是 Research Hub，而不是 ClearML 的
-Artifacts 面板。启动 loopback 服务后打开它打印出的带 `token` URL：
+Artifacts 面板。使用统一 gateway 时，浏览器直接打开无 token 的入口；gateway
+仅在本机上游请求中注入临时 session token：
 
 ```bash
-cd /home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow
-python -m research_hub serve --host 127.0.0.1 --port 8765
+cd /home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/integrations/srnav-clearml/clearml-server
+./start_unified_ui.sh
 ```
+
+然后访问 `http://127.0.0.1:8080/research/`。统一 gateway 还会在 ClearML 原生
+Task 详情 URL 自动读取当前 Task ID 与本地 bundle 下所有
+`clearml_*linkage*.json` 的映射，并返回同一 8080 的统一切换页面。页面顶部提供
+“ClearML 原生任务”和“实验校阅工作台”按钮，下面分别加载两个 iframe；不依赖浮动
+按钮、旧 Task Description，也不要求修改 ClearML Docker 镜像。原生 iframe 使用
+`native=1`；一个 bundle 可以因此绑定多个 report、v2、UI acceptance Task。
+单实验页面还嵌入 ClearML 原生 Task
+视图，因此可以在同一校阅页查看 Task 状态、日志、Scalars 和 Debug Samples；
+ClearML 的完成 Task/Artifact 仍保持只读，Markdown 编辑、媒体插入和新快照发布由
+本工作台完成。直接运行 `python -m research_hub serve` 仅用于调试，此时才需要使用
+命令打印的 token URL。
 
 在 `实验文档` 中点击“编辑”即可修改 Markdown；“检查并预览 diff”会运行模板
 校验并生成公式/表格预览，“确认保存”会做 base SHA-256 冲突检查、原子替换和
@@ -155,6 +186,8 @@ Chrome/Edge 显式授权工作区目录，要么使用上面的 live 服务，�
 
 ```text
 Web UI       http://127.0.0.1:8080
+ClearML Web upstream http://127.0.0.1:8082
+Research Hub upstream http://127.0.0.1:8765/research/
 API          http://127.0.0.1:8008
 Fileserver   http://127.0.0.1:8081
 artifact URI http://127.0.0.1:8081
@@ -201,6 +234,8 @@ Elasticsearch，不启动 Agent 服务。`local.env`、固定用户配置和 `st
 - evidence binding sidecar
 - historical review import manifest
 - 本地 loopback ClearML Server compose
+- loopback unified gateway：`8080/` → ClearML Web，`8080/research/` → Research Hub
+- 一实验一页面：bundle 聚合、Range 媒体路由、canonical Markdown 编辑、显式快照发布
 - 无 GPU evaluation Task smoke
 - evidence archive Task
 - ResearchWorkflow 和 ms-swift focused tests
@@ -217,6 +252,11 @@ Elasticsearch，不启动 Agent 服务。`local.env`、固定用户配置和 `st
 归档链路，不代表 GPU 训练收敛、benchmark validation 或论文结论。
 
 ## 7. 尚未实现部分
+
+统一工作台的本地页面、bundle 聚合、媒体 Range 路由和显式发布入口已经实现；当前
+尚未完成的是对真实浏览器/容器启动环境的长期运行验收，以及跨主机共享 URI。发布
+按钮依赖责任仓 Python 环境和 ClearML 凭据，未提供凭据时会安全返回失败，不会伪造
+Task 成功。
 
 ### P4-1～P4-3 实施方案（已完成设计，尚未声称生产验证）
 

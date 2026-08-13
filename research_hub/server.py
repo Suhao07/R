@@ -15,17 +15,19 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from .catalog import load_catalog, scan_and_write, search_catalog, write_catalog
 from .config import HubConfig, is_within, read_source_registry, sha256_file, stable_id, write_source_registry
 from .documents import DocumentConflictError, DocumentError, DocumentStore, DocumentValidationError
 from .frontend import render_index
+from .experiment_frontend import render_experiment_page
 from .reviews import ReviewError, ReviewStore
 from .rendering import render_document_pages
 
 
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
+RESTRICTED_FILE_SUFFIXES = {".safetensors", ".pt", ".pth", ".ckpt", ".bin", ".tar", ".gz", ".zip"}
 
 
 @dataclass
@@ -39,6 +41,7 @@ class HubServerContext:
 
     config: HubConfig
     token: str
+    base_path: str = ""
 
     def __post_init__(self) -> None:
         self.documents = DocumentStore(self.config, self.token.encode("utf-8"))
@@ -62,34 +65,67 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         """Handle static homepage and read-only API requests."""
 
         parsed = urlparse(self.path)
+        route = self._route_path(parsed.path)
         try:
-            if parsed.path in {"/", "/index.html"}:
-                self._html(render_index(load_catalog(self.context.config), live=True))
+            if route in {"/", "/index.html"}:
+                self._html(render_index(load_catalog(self.context.config), live=True, base_path=self.context.base_path))
                 return
-            if parsed.path == "/api/health":
+            if route == "/api/health":
                 self._json({"ok": True, "loopback_only": True})
                 return
-            if parsed.path == "/api/catalog":
+            if route == "/api/catalog":
                 self._json(load_catalog(self.context.config))
                 return
-            if parsed.path == "/api/settings":
+            if route == "/api/settings":
                 self._json(_settings_payload(self.context.config))
                 return
-            if parsed.path == "/api/search":
+            if route == "/api/search":
                 query = parse_qs(parsed.query).get("q", [""])[0]
                 self._json({"results": search_catalog(self.context.config, query)})
                 return
-            if parsed.path.startswith("/api/artifacts/"):
-                self._serve_artifact(unquote(parsed.path.rsplit("/", 1)[-1]))
+            if route.startswith("/api/artifacts/"):
+                self._serve_artifact(unquote(route.rsplit("/", 1)[-1]))
                 return
-            if parsed.path.startswith("/api/hub-state/"):
-                self._serve_hub_state(unquote(parsed.path[len("/api/hub-state/") :]))
+            if route.startswith("/api/hub-state/"):
+                self._serve_hub_state(unquote(route[len("/api/hub-state/") :]))
                 return
-            if parsed.path.startswith("/api/documents/"):
-                self._json(self.context.documents.get(unquote(parsed.path.rsplit("/", 1)[-1])))
+            if route.startswith("/api/documents/"):
+                self._json(self.context.documents.get(unquote(route.rsplit("/", 1)[-1])))
                 return
-            if parsed.path.startswith("/api/queues/"):
-                self._json(self.context.reviews.records(unquote(parsed.path.rsplit("/", 1)[-1])))
+            if route.startswith("/api/queues/"):
+                self._json(self.context.reviews.records(unquote(route.rsplit("/", 1)[-1])))
+                return
+            if route.startswith("/api/experiments/"):
+                self._serve_experiment_route(route)
+                return
+            if route.startswith("/api/task-links/"):
+                self._serve_task_link(unquote(route[len("/api/task-links/") :]))
+                return
+            if route.startswith("/task/"):
+                self._redirect_task(unquote(route[len("/task/") :]))
+                return
+            if route.startswith("/experiments/"):
+                experiment = self._experiment(unquote(route[len("/experiments/") :]))
+                if experiment is None:
+                    self._error(HTTPStatus.NOT_FOUND, "experiment not found")
+                else:
+                    selected_task = parse_qs(parsed.query).get("task_id", [""])[0]
+                    if selected_task:
+                        selected_link = next(
+                            (
+                                link for link in experiment.get("task_links", [])
+                                if link.get("task_id") == selected_task
+                            ),
+                            None,
+                        )
+                        if selected_link and selected_link.get("task_url"):
+                            experiment = dict(experiment)
+                            experiment["task_url"] = selected_link["task_url"]
+                    self._html(render_experiment_page(
+                        experiment,
+                        live=True,
+                        base_path=self.context.base_path,
+                    ))
                 return
             self._error(HTTPStatus.NOT_FOUND, "not found")
         except DocumentError as exc:
@@ -108,9 +144,10 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         """Handle token-protected write and refresh requests."""
 
         parsed = urlparse(self.path)
+        route = self._route_path(parsed.path)
         try:
             self._authorize_write()
-            if parsed.path == "/api/documents/preview":
+            if route == "/api/documents/preview":
                 value = self._read_json()
                 self._json(
                     self.context.documents.preview(
@@ -118,7 +155,7 @@ class HubRequestHandler(BaseHTTPRequestHandler):
                     )
                 )
                 return
-            if parsed.path == "/api/reviews":
+            if route == "/api/reviews":
                 value = self._read_json()
                 self._json(
                     self.context.reviews.append(
@@ -132,19 +169,22 @@ class HubRequestHandler(BaseHTTPRequestHandler):
                     )
                 )
                 return
-            if parsed.path == "/api/reviews/export":
+            if route == "/api/reviews/export":
                 value = self._read_json()
                 self._json(self.context.reviews.export(str(value.get("queue_id", ""))))
                 return
-            if parsed.path == "/api/reindex":
+            if route == "/api/reindex":
                 catalog = scan_and_write(self.context.config)
                 render_document_pages(self.context.config, catalog)
                 write_catalog(self.context.config, catalog)
                 self._json({"summary": catalog["summary"], "generated_at": catalog["generated_at"]})
                 return
-            if parsed.path == "/api/attachments":
+            if route == "/api/attachments":
                 document_id = parse_qs(parsed.query).get("document_id", [""])[0]
                 self._json(self._store_attachment(document_id))
+                return
+            if route.startswith("/api/experiments/") and route.endswith("/publish"):
+                self._publish_experiment(route)
                 return
             self._error(HTTPStatus.NOT_FOUND, "not found")
         except DocumentConflictError as exc:
@@ -162,9 +202,10 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         """Atomically save a canonical record or local source configuration."""
 
         parsed = urlparse(self.path)
+        route = self._route_path(parsed.path)
         try:
             self._authorize_write()
-            if parsed.path == "/api/settings":
+            if route == "/api/settings":
                 value = self._read_json()
                 raw = value.get("source_registry")
                 if not isinstance(raw, dict):
@@ -176,12 +217,12 @@ class HubRequestHandler(BaseHTTPRequestHandler):
                 write_catalog(config, catalog)
                 self._json({"settings": _settings_payload(config), "summary": catalog["summary"]})
                 return
-            if not parsed.path.startswith("/api/documents/"):
+            if not route.startswith("/api/documents/"):
                 self._error(HTTPStatus.NOT_FOUND, "not found")
                 return
             value = self._read_json()
             result = self.context.documents.save(
-                unquote(parsed.path.rsplit("/", 1)[-1]),
+                unquote(route.rsplit("/", 1)[-1]),
                 str(value.get("base_sha256", "")),
                 value.get("content", ""),
                 str(value.get("preview_token", "")),
@@ -223,6 +264,134 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         if not isinstance(value, dict):
             raise ValueError("request body must be a JSON object")
         return value
+
+    def _route_path(self, path: str) -> str:
+        """Normalize a direct or reverse-proxied request to a Hub route."""
+
+        base = self.context.base_path.rstrip("/")
+        if base and (path == base or path.startswith(base + "/")):
+            path = path[len(base):] or "/"
+        return path or "/"
+
+    def _experiment(self, experiment_id: str) -> dict[str, Any] | None:
+        """Resolve one catalogued experiment bundle by stable ID."""
+
+        catalog = load_catalog(self.context.config)
+        return next(
+            (
+                item
+                for item in catalog.get("experiments", [])
+                if item.get("id") == experiment_id or item.get("run_id") == experiment_id
+            ),
+            None,
+        )
+
+    def _serve_experiment_route(self, route: str) -> None:
+        """Serve experiment metadata or one safe bundle file."""
+
+        remainder = route[len("/api/experiments/"):]
+        if "/files/" not in remainder:
+            experiment = self._experiment(unquote(remainder))
+            if experiment is None:
+                self._error(HTTPStatus.NOT_FOUND, "experiment not found")
+            else:
+                self._json(experiment)
+            return
+        raw_id, raw_relative = remainder.split("/files/", 1)
+        experiment = self._experiment(unquote(raw_id))
+        if experiment is None:
+            self._error(HTTPStatus.NOT_FOUND, "experiment not found")
+            return
+        relative = Path(unquote(raw_relative))
+        root = Path(str(experiment["root"])).resolve()
+        path = (root / relative).resolve(strict=False)
+        if relative.is_absolute() or ".." in relative.parts or path.is_symlink() or not path.is_file() or not is_within(path, root):
+            self._error(HTTPStatus.NOT_FOUND, "experiment file not found")
+            return
+        if path.suffix.lower() in RESTRICTED_FILE_SUFFIXES:
+            self._error(HTTPStatus.NOT_FOUND, "experiment file is restricted")
+            return
+        _serve_file(self, path)
+
+    def _serve_task_link(self, task_id: str) -> None:
+        """Resolve a ClearML task ID to the local single-experiment page."""
+
+        if not re.fullmatch(r"[0-9a-fA-F]{32}", task_id):
+            self._json({"ok": False, "error": "invalid task id"}, HTTPStatus.BAD_REQUEST)
+            return
+        catalog = load_catalog(self.context.config)
+        experiment = next(
+            (
+                item for item in catalog.get("experiments", [])
+                if item.get("task_id") == task_id
+                or any(link.get("task_id") == task_id for link in item.get("task_links", []))
+            ),
+            None,
+        )
+        if experiment is None:
+            self._json({"ok": False, "task_id": task_id}, HTTPStatus.NOT_FOUND)
+            return
+        task_link = next(
+            (link for link in experiment.get("task_links", []) if link.get("task_id") == task_id),
+            {},
+        )
+        self._json(
+            {
+                "ok": True,
+                "task_id": task_id,
+                "run_id": task_link.get("run_id") or experiment.get("run_id"),
+                "title": experiment.get("title"),
+                "href": (
+                    f"{self.context.base_path}/experiments/{quote(str(experiment.get('id', '')), safe='')}"
+                    f"?task_id={quote(task_id, safe='')}"
+                ),
+            }
+        )
+
+    def _redirect_task(self, task_id: str) -> None:
+        """Redirect a ClearML Task ID to its editable local review workspace."""
+
+        if not re.fullmatch(r"[0-9a-fA-F]{32}", task_id):
+            self._error(HTTPStatus.BAD_REQUEST, "invalid task id")
+            return
+        catalog = load_catalog(self.context.config)
+        experiment = next(
+            (
+                item for item in catalog.get("experiments", [])
+                if item.get("task_id") == task_id
+                or any(link.get("task_id") == task_id for link in item.get("task_links", []))
+            ),
+            None,
+        )
+        if experiment is None:
+            self._error(HTTPStatus.NOT_FOUND, "experiment not found for task")
+            return
+        location = (
+            f"{self.context.base_path}/experiments/{quote(str(experiment.get('id', '')), safe='')}"
+            f"?task_id={quote(task_id, safe='')}"
+        )
+        self.send_response(HTTPStatus.FOUND)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _publish_experiment(self, route: str) -> None:
+        """Create a new ClearML snapshot only after an explicit UI action."""
+
+        from .publishing import publish_experiment
+
+        raw_id = route[len("/api/experiments/"):-len("/publish")].strip("/")
+        experiment = self._experiment(unquote(raw_id))
+        if experiment is None:
+            self._error(HTTPStatus.NOT_FOUND, "experiment not found")
+            return
+        try:
+            result = publish_experiment(self.context.config, experiment)
+        except (OSError, ValueError, RuntimeError) as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, str(exc))
+            return
+        self._json(result)
 
     def _serve_artifact(self, artifact_id: str) -> None:
         """Serve one regular, openable artifact with single-range support."""
@@ -349,7 +518,13 @@ class HubRequestHandler(BaseHTTPRequestHandler):
         super().log_message(safe, *args)
 
 
-def make_server(config: HubConfig, host: str, port: int, token: str | None = None) -> ThreadingHTTPServer:
+def make_server(
+    config: HubConfig,
+    host: str,
+    port: int,
+    token: str | None = None,
+    base_path: str = "",
+) -> ThreadingHTTPServer:
     """Create a loopback-only server without starting its request loop.
 
     Args:
@@ -369,7 +544,12 @@ def make_server(config: HubConfig, host: str, port: int, token: str | None = Non
         raise ValueError("Research Hub may bind only 127.0.0.1, ::1, or localhost")
     if not 0 <= port <= 65535:
         raise ValueError("port must be in 0..65535")
-    context = HubServerContext(config=config, token=token or secrets.token_urlsafe(32))
+    normalized_base = "/" + base_path.strip("/") if base_path.strip("/") else ""
+    context = HubServerContext(
+        config=config,
+        token=token or secrets.token_urlsafe(32),
+        base_path=normalized_base,
+    )
     handler = type("BoundHubRequestHandler", (HubRequestHandler,), {"context": context})
     return ThreadingHTTPServer((host, port), handler)
 

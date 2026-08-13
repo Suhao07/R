@@ -31,6 +31,13 @@ def main(argv: list[str] | None = None) -> int:
     serve = subparsers.add_parser("serve", help="start token-protected loopback UI")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8765)
+    serve.add_argument("--base-path", default="")
+    gateway = subparsers.add_parser("gateway", help="start one loopback port for ClearML Web and Research Hub")
+    gateway.add_argument("--host", default="127.0.0.1")
+    gateway.add_argument("--port", type=int, default=8080)
+    gateway.add_argument("--hub-port", type=int, default=8765)
+    gateway.add_argument("--clearml-host", default="127.0.0.1")
+    gateway.add_argument("--clearml-port", type=int, default=8082)
     subparsers.add_parser("doctor", help="check Hub configuration and generated catalog state")
     args = parser.parse_args(argv)
     config = load_config(args.portfolio_root)
@@ -48,10 +55,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "serve":
         catalog = scan_and_write(config)
         _write_static(config, catalog)
-        server = make_server(config, args.host, args.port)
+        server = make_server(config, args.host, args.port, base_path=args.base_path)
         token = server.RequestHandlerClass.context.token
         host, bound_port = server.server_address[:2]
-        print(f"Research Hub: http://{host}:{bound_port}/?token={token}")
+        route = args.base_path.rstrip("/")
+        print(f"Research Hub: http://{host}:{bound_port}{route or ''}/?token={token}")
         print("Static homepage: " + str(config.static_index))
         try:
             server.serve_forever()
@@ -59,6 +67,20 @@ def main(argv: list[str] | None = None) -> int:
             print("\nResearch Hub stopped.")
         finally:
             server.server_close()
+        return 0
+    if args.command == "gateway":
+        from .gateway import serve_gateway
+
+        catalog = scan_and_write(config)
+        _write_static(config, catalog)
+        serve_gateway(
+            config,
+            host=args.host,
+            port=args.port,
+            hub_port=args.hub_port,
+            clearml_host=args.clearml_host,
+            clearml_port=args.clearml_port,
+        )
         return 0
     raise AssertionError(f"unsupported command {args.command}")
 

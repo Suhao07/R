@@ -19,6 +19,7 @@ sys.path.insert(0, str(PORTFOLIO_ROOT))
 from research_hub.catalog import load_catalog, scan_and_write, search_catalog
 from research_hub.config import load_config, read_source_registry, sha256_file, write_source_registry
 from research_hub.documents import DocumentConflictError, DocumentError, DocumentStore
+from research_hub.experiment_frontend import render_experiment_page
 from research_hub.frontend import render_index
 from research_hub.rendering import render_document_pages
 from research_hub.reviews import ReviewStore
@@ -155,6 +156,59 @@ def test_scan_catalog_and_static_index(hub_config) -> None:
     static = render_index(catalog, live=False)
     assert "Historical review" in static
     assert "static · file:// local preview" in static
+
+
+def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_config) -> None:
+    """A bundle binds its canonical record and manifest-selected media."""
+
+    root = hub_config.artifact_root / "bundle-1"
+    (root / "images").mkdir(parents=True)
+    (root / "videos").mkdir()
+    (root / "report.md").write_text(
+        "# Bundle report\n\n| 实验 ID | `bundle-experiment-1` |\n",
+        encoding="utf-8",
+    )
+    (root / "report.html").write_text("<html><body>full report</body></html>", encoding="utf-8")
+    (root / "scorecard.json").write_text('{"metric": 0.75}\n', encoding="utf-8")
+    (root / "clearml_task_linkage.json").write_text(
+        json.dumps({
+            "schema_version": "clearml_task_linkage_v1",
+            "project_id": "fixture",
+            "clearml_project": "Fixture",
+            "run_id": "bundle-run-1",
+            "task_kind": "evaluate",
+            "task_id": "0123456789abcdef0123456789abcdef",
+        }),
+        encoding="utf-8",
+    )
+    (root / "clearml_ui_acceptance_task_linkage.json").write_text(
+        json.dumps({
+            "schema_version": "clearml_task_linkage_v1",
+            "project_id": "fixture",
+            "clearml_project": "Fixture",
+            "run_id": "bundle-ui-acceptance-1",
+            "task_kind": "evaluate",
+            "task_id": "fedcba9876543210fedcba9876543210",
+        }),
+        encoding="utf-8",
+    )
+    (root / "report_manifest.json").write_text(
+        json.dumps({"sections": {"成功案例": [{"title": "case", "path": "images/case.jpg"}]}}),
+        encoding="utf-8",
+    )
+    (root / "images" / "case.jpg").write_bytes(b"jpg")
+    canonical = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "bundle.md"
+    canonical.write_text(_valid_record().replace("test-experiment", "bundle-experiment-1"), encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    experiment = next(item for item in catalog["experiments"] if item["run_id"] == "bundle-run-1")
+    assert experiment["canonical_document_id"]
+    assert experiment["media"][0]["relative_path"] == "images/case.jpg"
+    assert any(item["relative_path"] == "report.html" for item in experiment["files"])
+    assert any(item["task_id"] == "fedcba9876543210fedcba9876543210" for item in experiment["task_links"])
+    page = render_experiment_page(experiment, base_path="/research")
+    assert "完整 HTML 校阅报告" in page
+    assert '"/research"' in page
+    assert "bundle-run-1" in page
 
 
 def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> None:
