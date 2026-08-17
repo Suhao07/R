@@ -20,13 +20,14 @@
     <div class="field" data-field="evidence-requirements"><p class="value" data-value="true" data-empty="false">根据实际代码和落盘产物分析；严格区分 proposed、implemented、smoke、validated 与 released，不把计划或参考仓结果描述成主框架证据。每个实验文档使用统一模板，记录效果好与效果不好的结果，并按时间追加影响实验的用户讨论、决定及未解决项。</p></div>
     <div class="field" data-field="autonomy-level"><p class="value" data-value="true" data-empty="false">目标和责任边界明确时直接推进；实验结束后由项目负责人主动分析并提出可证伪的下一实验，而不是等待 instructions；参考仓改写、外部数据传输、付费批量调用、昂贵 batch、不可逆动作、push、tag 或 release 前确认。</p></div>
     <div class="field" data-field="file-editing"><p class="value" data-value="true" data-empty="false">主实现进入 Urban-Nav-SR 或 ms-swift；参考仓默认只读；保留所有已有 dirty worktree，避免无关格式化和跨仓 broad staging。</p></div>
+    <div class="field" data-field="jump-host-intermediate-artifact-storage"><p class="value" data-value="true" data-empty="false">中转机上为跨服务器工作流创建的可恢复中间产物（launcher、同步包、命令记录、筛选清单、日志副本与 review 导出）统一保存到 /Users/wangjingke/Workspace/haosu。/tmp 仅可作为同一条命令生命周期内的短暂缓冲；正式数据、checkpoint、原始媒体、密钥或 token 不得写入该工作流中间目录。</p></div>
     <div class="field" data-field="verification-style"><p class="value" data-value="true" data-empty="false">先 targeted tests 和真实小样本，再扩大训练或评测；工作流 doctor 不能替代主仓代码测试，参考方法对比不能替代冻结 benchmark。</p></div>
   </section>
   <section><h2>外部与安全</h2>
     <div class="field" data-field="external-action-gates"><p class="value" data-value="true" data-empty="false">未经明确授权，不向外部服务发送本地媒体、坐标、prompt 或私有 benchmark；模型列表只用于发现，正式调用前需真实请求语义 smoke。</p></div>
     <div class="field" data-field="security-privacy"><p class="value" data-value="true" data-empty="false">组合层不记录密钥、token、大媒体、原始数据或 checkpoint；只记录必要路径、哈希、计数、来源和权限状态。</p></div>
   </section>
-  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-08-04</p></div></footer>
+  <footer><div class="field" data-field="last-verified-at"><p class="value" data-value="true" data-empty="false">2026-08-10</p></div></footer>
 </main>
 </body>
 </html>
