@@ -37,6 +37,7 @@ metrics:
   train:
     loss: train/loss
     learning_rate: train/lr
+    step_time_s: train/step_time_s
   evaluation:
     primary: eval/primary
     coverage: eval/coverage

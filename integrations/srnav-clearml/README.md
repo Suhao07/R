@@ -9,6 +9,10 @@ This is the first concrete project profile for the reusable ClearML template.
 It covers both `ms-swift/docs/Experiments` and the RouteServer documentation
 root, while using the existing `review_outputs` tree as a read-only source.
 
+FWTW uses the project-specific companion profile
+`fwtw-project-profile.yaml`. It keeps the same review root but maps FWTW's
+native `metrics.ADE/FDE/yaw_MAE` evaluation schema and task ownership.
+
 Validate it from the `/SR/Code` workspace:
 
 ```bash

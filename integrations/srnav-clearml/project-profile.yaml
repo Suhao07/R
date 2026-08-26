@@ -51,6 +51,7 @@ metrics:
     loss: train/loss
     learning_rate: train/lr
     throughput: train/throughput
+    step_time_s: train/step_time_s
   evaluation:
     l2_at_1s: eval/l2_at_1s
     l2_at_2s: eval/l2_at_2s

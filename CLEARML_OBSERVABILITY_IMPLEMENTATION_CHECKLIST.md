@@ -54,9 +54,44 @@ SSH/tmux 训练和评测命令，不安装 GPU Agent，不自动上传原始数�
 - [x] 创建独立 evidence archive Task：`91a4d6e502d446ecb18be516a83055b7`
 - [ ] 用户人工验收 Web UI 中的指标、artifact、文档和 Debug Sample
 
-## P4：后续独立阶段（本轮明确延期）
+## P4：训练期诊断与后续独立阶段
 
-- [ ] 手动 train 接入 TensorBoard、checkpoint URI 和恢复证据（本轮不做）
+- [x] UrbanNav `cached_traj_query_v2` 两行、1-step 真实训练 smoke：TensorBoard、JSONL、checkpoint 和
+  `traj_collapse`/CFM flow-time/选定层 TRAJ 激活已写出；详见
+  `ms-swift/docs/Experiments/urbannav_diagnostics_mini_smoke_20260825.md`
+- [x] 受信 tunnel 下手动 train 的 ClearML callback smoke：Task
+  `a1b2e160171d44368393db9c30fea115` 已完成，Scalars 和两个诊断 artifact 已由 API 核验
+- [x] 真实 Stage-II checkpoint attention replay：Task
+  `a9c20770a367482687ba35039bcf43c6` 已完成；dense layer `23` 的 HTML Debug Sample、JSON
+  receipt 和 linkage 已由 API 核验；Qwen3.5 linear-attention layers `0/12` 的明确不支持错误
+  已保留
+- [x] DF-OPD 8 行/1-step diagnostics-only smoke：在已核验 UrbanNav Python 3.10/CUDA 环境完成
+  replay 首步，Task `7ddd5d881a994ab498361944d7ff4a85` 已产生实时 Scalars、receipt 和层/TRAJ/CFM
+  诊断指标；Teacher certification 仍为 `insufficient_evidence`、`student_opd_eligible=false`，不构成
+  正式 Student 晋级。Task 已通过远端 SDK 标记 `completed`，但 checkpoint 远端上传/恢复 parity
+  尚未完成
+- [x] `sidewalk_clearml` 生命周期自动写出 planned `visualization_manifest.json`、finished
+  `visualization_index.json` 和 `clearml_task_linkage.json`；正确远程 Torch 环境的 callback
+  lifecycle smoke 已实际生成三者并通过上传调用合同；真实无 GPU Task
+  `40dad12ff8f44b75aded490e64f594a9` 已由服务器 API 核验为 `completed`，并包含三个生命周期 Artifact
+- [x] post-encode 输入快照从展开后的 model-input mapping 生成；远程集成 smoke 已确认序列轴
+  与 expanded `input_ids`/`attention_mask` 对齐，并保留视觉输入
+- [x] 真实 UrbanNav Stage-II 2 行/1-step Task lifecycle smoke：Task
+  `a777a230ff66430eaf13ac82c0cfdfc9` 在服务器端为 `completed`、iteration `1`，产生 `144` 个
+  Scalars（含层/TRAJ/CFM/collapse/token norm）以及三个 lifecycle Artifact；本次显式不保存
+  checkpoint，避免把实时诊断证据与 checkpoint URI 证据混为一谈
+- [ ] 解决远程 `/mnt/volumes` 输出盘 100% quota 后，再执行带 checkpoint/layout/input snapshot
+  的真实训练 Task；r11 的失败原因为 `Disk quota exceeded`，不构成代码失败
+- [x] 在远端 `/tmp` 绕开持久盘 quota 执行带 checkpoint/layout/input snapshot 的真实 Task：Task
+  `2a4c4954a4024c3687cf0bdd97373dbe` 已完成，并在同一任务中上传两个诊断 Artifact 和三个生命周期 Artifact；远端 `/mnt/volumes` quota 仍待清理
+- [x] 使用 r13 的 checkpoint、layout 和 input snapshot 重新执行 attention CLI：CUDA/bfloat16 dense layer `23` 返回成功，生成 HTML/JSON/receipt
+- [x] DF-OPD 精确 `_df_opd_decision_value_token_mask` 已绑定到 `TokenLayout.key_groups["decision_value"]`；远端正确 Torch 环境 focused smoke 输出 `REMOTE_DECISION_LAYOUT_OK`，未从序列位置推断语义
+- [x] 修复单查询 `[B]` 与 TokenLayout `[B,Q]` 的轴契约；远端 post-encode smoke 输出 `REMOTE_POST_ENCODE_DECISION_LAYOUT_OK`，16-query 路径保持 `[B,16]`
+- [x] 修复 Qwen BPE 标点/value 边界 token 的过度拒绝；真实 `checkpoint-6079` tokenizer 输出 `REMOTE_REAL_TOKENIZER_DECISION_OK`，每个 canonical value 保留完整 token 覆盖
+- [x] 定位 DF-OPD 远端通用 `GKDTrainer` 误分派根因：远端 `swift/pipelines/train/sft.py` 未同步当前 `self._get_trainer_cls()` 入口；r20 已确认 `SidewalkDFOPDTrainer` 实例化，r31 已在正确远端环境完成真实 optimizer step 并产出 DF-OPD/层/TRAJ/CFM 诊断指标
+- [x] 修复 DF-OPD replay 的 Qwen 模板对齐：FullCoT 使用既有 Stage-I `\\n\\n` payload suffix，Decision value mask 使用当前 template 的真实 `<|im_end|>\\n` suffix；r31 8 行/1-step 运行通过
+- [ ] 通过晋级门禁的 Teacher 后重新执行 DF-OPD diagnostics Task
+- [ ] 完整 checkpoint 的 ClearML URI、下载/恢复 parity 和长运行实时吞吐证据
 - [x] 提供 `ms-swift/scripts/sidewalk_nav/clearml_report_train.py` 的手动训练收尾入口；checkpoint 默认 link-only
 - [x] 历史 review_outputs 选择性本地导入清单，标记 `historical_import`
 - [ ] 将历史清单中的选定目录创建为真实 ClearML `historical_import` Task
