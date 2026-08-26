@@ -8,8 +8,10 @@ Only rank zero creates and writes the Task in distributed execution.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
+import shutil
 import subprocess
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -112,13 +114,124 @@ def _file_metadata(path: Path) -> dict[str, Any]:
         item['sha256'] = None
         item['hash_skipped_reason'] = 'file exceeds 8388608 bytes'
         return item
-    import hashlib
     digest = hashlib.sha256()
     with resolved.open('rb') as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b''):
             digest.update(chunk)
     item['sha256'] = digest.hexdigest()
     return item
+
+
+def checkpoint_manifest(path: str | Path) -> dict[str, Any]:
+    """Return a deterministic manifest for a checkpoint file or directory."""
+
+    resolved = Path(path).expanduser().resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(resolved)
+    if resolved.is_file():
+        digest = hashlib.sha256()
+        size = 0
+        with resolved.open('rb') as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                digest.update(chunk)
+                size += len(chunk)
+        return {
+            'path': str(resolved),
+            'kind': 'file',
+            'bytes': size,
+            'sha256': digest.hexdigest(),
+        }
+    if not resolved.is_dir():
+        raise ValueError(f'checkpoint path must be a file or directory: {resolved}')
+    digest = hashlib.sha256()
+    files = 0
+    total_bytes = 0
+    for child in sorted(item for item in resolved.rglob('*') if item.is_file()):
+        relative = child.relative_to(resolved).as_posix()
+        child_digest = hashlib.sha256()
+        size = 0
+        with child.open('rb') as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b''):
+                child_digest.update(chunk)
+                size += len(chunk)
+        digest.update(relative.encode('utf-8'))
+        digest.update(b'\0')
+        digest.update(str(size).encode('ascii'))
+        digest.update(b'\0')
+        digest.update(child_digest.digest())
+        digest.update(b'\n')
+        files += 1
+        total_bytes += size
+    return {
+        'path': str(resolved),
+        'kind': 'directory',
+        'files': files,
+        'bytes': total_bytes,
+        'sha256': digest.hexdigest(),
+    }
+
+
+def compare_checkpoint_manifests(
+    source: str | Path,
+    restored: str | Path,
+) -> dict[str, Any]:
+    """Compare two checkpoint paths by their portable manifest fields."""
+
+    source_manifest = checkpoint_manifest(source)
+    restored_manifest = checkpoint_manifest(restored)
+    fields = ('kind', 'files', 'bytes', 'sha256')
+    mismatches = {
+        field: {
+            'source': source_manifest.get(field),
+            'restored': restored_manifest.get(field),
+        }
+        for field in fields
+        if source_manifest.get(field) != restored_manifest.get(field)
+    }
+    return {
+        'parity': not mismatches,
+        'source': source_manifest,
+        'restored': restored_manifest,
+        'mismatches': mismatches,
+    }
+
+
+def download_clearml_artifact(
+    task_id: str,
+    artifact_name: str,
+    destination: str | Path,
+    *,
+    force_download: bool = False,
+) -> dict[str, Any]:
+    """Download one ClearML artifact and return its local checkpoint manifest."""
+
+    if not task_id or not artifact_name:
+        raise ValueError('task_id and artifact_name are required')
+    from clearml import Task
+
+    task = Task.get_task(task_id=task_id)
+    artifact = task.artifacts.get(artifact_name)
+    if artifact is None:
+        raise KeyError(f'ClearML artifact not found: {task_id}/{artifact_name}')
+    cached = Path(
+        artifact.get_local_copy(
+            extract_archive=True,
+            force_download=force_download,
+        )).expanduser().resolve()
+    if not cached.exists():
+        raise FileNotFoundError(f'ClearML artifact cache is missing: {cached}')
+    target = Path(destination).expanduser().resolve()
+    if target.exists():
+        raise FileExistsError(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if cached.is_dir():
+        shutil.copytree(cached, target)
+    else:
+        shutil.copy2(cached, target)
+    manifest = checkpoint_manifest(target)
+    manifest['task_id'] = task_id
+    manifest['artifact_name'] = artifact_name
+    return manifest
 
 
 def build_run_configuration(
@@ -210,6 +323,14 @@ class ClearMLRun:
                 'ClearML SDK is not installed; install clearml in the runtime environment.'
             ) from exc
 
+        artifacts = self.profile.get('artifacts', {})
+        checkpoint_policy = str(artifacts.get('checkpoint_policy', 'link_only'))
+        if checkpoint_policy not in {'link_only', 'upload_selected', 'upload_all'}:
+            raise ValueError(f'unsupported checkpoint_policy: {checkpoint_policy}')
+        output_uri = _resolve_output_uri(self.profile)
+        if checkpoint_policy != 'link_only' and not output_uri:
+            raise ValueError(
+                'checkpoint upload policy requires a resolved artifacts.output_uri')
         task = Task.init(
             project_name=self.profile['clearml_project'],
             task_name=self.task_name,
@@ -219,7 +340,7 @@ class ClearMLRun:
             tags=tags
             or [self.profile['project_id'], self.task_kind, self.run_id],
             reuse_last_task_id=False,
-            output_uri=_resolve_output_uri(self.profile),
+            output_uri=output_uri,
         )
         self.task = task
         self.logger = task.get_logger()
@@ -263,12 +384,31 @@ class ClearMLRun:
                 title, series = group, title
             self.report_scalar(title, series, value, iteration=0)
 
-    def upload_artifact(self, name: str, path: Path) -> None:
+    def record_checkpoint(self, path: str | Path, *, step: int) -> None:
+        """Record a checkpoint and upload it when the profile enables it."""
+
         if self.task is None:
             return
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        self.task.upload_artifact(name=name, artifact_object=str(path))
+        checkpoint_path = Path(path).expanduser()
+        policy = str(self.profile.get('artifacts', {}).get('checkpoint_policy', 'link_only'))
+        self.task.connect(
+            {
+                'global_step': int(step),
+                'path': str(checkpoint_path),
+                'policy': policy,
+            },
+            name='checkpoint',
+        )
+        if policy != 'link_only':
+            self.upload_artifact(f'checkpoint_step_{int(step)}', checkpoint_path)
+
+    def upload_artifact(self, name: str, path: str | Path) -> None:
+        if self.task is None:
+            return
+        artifact_path = Path(path).expanduser()
+        if not artifact_path.exists():
+            raise FileNotFoundError(artifact_path)
+        self.task.upload_artifact(name=name, artifact_object=str(artifact_path))
 
     def report_media(self, *, title: str, series: str, iteration: int,
                      path: Path) -> None:

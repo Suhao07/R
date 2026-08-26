@@ -220,6 +220,110 @@ Hub 和后续人工校阅继续打开。
 需要补充归档文件，创建一个新的 `evidence-archive` Task，并在配置中记录
 原 Task ID。
 
+### 5.1 原始 Stage-I LM 训练
+
+`examples/sidewalk_nav/train/run_stage_i_joint_4b_full.sh` 可以直接复用同一个生命周期
+callback。只需在原有训练命令前设置：
+
+```bash
+export DIAGNOSTICS_CLEARML_PROFILE=/path/to/project-profile.yaml
+export DIAGNOSTICS_CLEARML_RUN_ID=urbannav-stage-i-<date>
+export DIAGNOSTICS_CLEARML_TASK_NAME="UrbanNav Stage-I/<date>"
+bash ms-swift/examples/sidewalk_nav/train/run_stage_i_joint_4b_full.sh
+```
+
+Stage-I 是 LM-only 路径，因此会记录 loss、learning rate、step time、checkpoint 和生命周期
+artifact；`traj_collapse`、`flow_time`、TRAJ 层激活等 CFM 诊断只在 Stage-II action-loss 路径
+启用。
+
+## 6. 自动 train → eval → report（无 Agent）
+
+现有训练和评测命令可以由一个本地编排入口按固定顺序执行；它不接管训练逻辑，
+也不启动 ClearML Agent：
+
+```bash
+python ResearchWorkflow/scripts/run_clearml_pipeline.py \
+  --profile ResearchWorkflow/integrations/srnav-clearml/project-profile.yaml \
+  --run-id <stable-run-id> \
+  --experiment-root review_outputs/<experiment_id> \
+  --train-command '<原有训练命令>' \
+  --eval-command '<原有评测命令>' \
+  --train-summary review_outputs/<experiment_id>/train_summary.json
+```
+
+入口先写入 `status=running` 的 `pipeline_receipt.json`，执行训练、训练收尾 reporter、
+评测，最后回写 `eval_report` 和 `status=completed`；评测 bundle 上传的是最终 receipt。
+训练或评测失败时 receipt 保留 `failed_stage` 和错误信息。若训练入口已经通过 `SidewalkClearMLCallback` 创建实时 Task，
+加 `--skip-train-report`，避免重复创建训练 Task。命令使用参数列表执行，不经过
+shell；复杂环境设置请在外部准备好后再调用。
+训练 reporter 返回的 Task ID 会写入评测 Task 的 `pipeline.parent_train_task_id`
+配置，Research Hub 也会用同一 `run_id` 聚合两者。
+
+### 可选 ClearML-native Pipeline/Queue
+
+当三个基础 Task 已经存在，并且 lixiang 上有对应的 GPU Agent 时，可以注册原生
+Pipeline。参数覆盖使用 ClearML 的完整参数路径，由项目自己提供，模板不猜测
+训练脚本的 CLI 名称：
+
+```bash
+python ResearchWorkflow/scripts/register_clearml_pipeline.py \
+  --profile ResearchWorkflow/integrations/srnav-clearml/project-profile.yaml \
+  --run-id <stable-run-id> \
+  --pipeline-name "UrbanNav train-eval-report" \
+  --queue srnav-train \
+  --train-task-id <train-base-task-id> \
+  --eval-task-id <eval-base-task-id> \
+  --report-task-id <report-base-task-id> \
+  --parameter-overrides /path/to/clearml-parameter-overrides.json \
+  --plan-out /tmp/urbannav-pipeline-plan.json \
+  --register
+```
+
+先不加 `--register` 只会生成计划，不需要安装 ClearML SDK。加 `--start` 才会启动
+Pipeline controller；它不会自动安装 Agent，也不会替换现有训练命令。`abort_on_failure`
+固定开启，`train → eval → report` 的父子关系由 ClearML DAG 保存。
+
+## 7. checkpoint 下载与 parity
+
+将 profile 的 `checkpoint_policy` 改为 `upload_selected`，并设置已解析的
+`CLEARML_DEFAULT_OUTPUT_URI` 后，训练 callback 会在保存点上传选中的 checkpoint
+目录。下载并比对原目录：
+
+```bash
+PYTHONPATH=/home/ubuntu/WorkSpace/project/SR/Code/ms-swift \
+python ms-swift/scripts/sidewalk_nav/clearml_checkpoint_parity.py \
+  --task-id <task-id> \
+  --artifact-name checkpoint_step_<step> \
+  --source-checkpoint <原 checkpoint 目录> \
+  --destination /tmp/<run-id>-checkpoint-<step> \
+  --receipt /tmp/<run-id>-checkpoint-parity.json
+```
+
+该命令比较 kind、文件数、字节数和确定性 SHA-256；任一字段不一致即返回失败。
+它验证文件级恢复 parity，不替代项目自己的模型加载/推理恢复测试。
+
+## 8. 历史 review_outputs 导入
+
+先生成边界清晰的计划；只有显式加 `--publish` 才创建标记为
+`historical_import` 的 ClearML review Task：
+
+```bash
+python ResearchWorkflow/scripts/publish_clearml_history_import.py \
+  --profile ResearchWorkflow/integrations/srnav-clearml/project-profile.yaml \
+  --root review_outputs/<历史目录> \
+  --manifest-out /tmp/historical-import.json
+
+python ResearchWorkflow/scripts/publish_clearml_history_import.py \
+  --profile ResearchWorkflow/integrations/srnav-clearml/project-profile.yaml \
+  --root review_outputs/<历史目录> \
+  --manifest-out /tmp/historical-import.json \
+  --linkage-dir ResearchWorkflow/_research_hub/history \
+  --publish
+```
+
+导入只上传 manifest 选出的 evidence 文件和媒体候选，不上传 raw data、checkpoint
+或未列入清单的文件。
+
 上传脚本在带 `--experiment-root` 的模式下会自动把 Task description 增加到
 Research Hub 的深链接，例如：
 
@@ -322,22 +426,28 @@ ClearML Task 都会自动跳转到同一个实验工作台。
 
 ## 8. UI 验收清单
 
-- [ ] Projects 中能找到中文 Task 名称和 `SR-Nav` 项目。
-- [ ] `SCALARS` 能看到 `eval/*` 指标。
-- [ ] `DEBUG SAMPLES` 能打开 HTML、图片并播放视频。
-- [ ] `ARTIFACTS` 能下载 scorecard、CSV、Markdown、receipt 和 manifest。
-- [ ] Task description 中有 validation scope 和 provenance。
-- [ ] Reports 页面能创建、编辑并嵌入 Task 可视化。
-- [ ] 本地 `review_outputs/index.html` 仍能打开并链接到原始校阅材料。
-- [ ] `8080/research/experiments/<run_id>` 能同时显示完整 HTML、canonical 文档、指标和媒体。
-- [ ] 在实验页面修改 Markdown 后，diff/校验/备份/预览均成功。
+- [x] Projects 中能找到中文 Task 名称和 `SR-Nav` 项目。
+- [x] `SCALARS` 能看到 `eval/*` 指标。
+- [x] `DEBUG SAMPLES` 能打开 HTML、图片并播放视频。
+- [x] `ARTIFACTS` 能下载 scorecard、CSV、Markdown、receipt 和 manifest。
+- [x] Task description 中有 validation scope 和 provenance。
+- [x] Reports 页面能创建、编辑并嵌入 Task 可视化。
+- [x] 本地 `review_outputs/index.html` 仍能打开并链接到原始校阅材料。
+- [x] `8080/research/experiments/<run_id>` 能同时显示完整 HTML、canonical 文档、指标和媒体。
+- [x] 在实验页面修改 Markdown 后，diff/校验/备份/预览均成功。
+
+以上为 2026-08-26 用户人工验收结果；ClearML 原生 Artifacts/Debug Samples 仍是只读查看，
+canonical Markdown 的编辑入口是 Research Hub。
 
 ## 9. 当前限制
 
 - Web UI 菜单暂不提供中文 locale；中文内容和中文 Report 可以正常使用。
-- 本阶段没有实时训练 step/loss 埋点；训练过程仍需从原有日志和后续 train
-  reporter 接入。
+- UrbanNav Stage-I LM-only 与 Stage-II CFM launcher 都已接入可选的实时训练 callback；只有在训练命令
+  显式提供 `DIAGNOSTICS_CLEARML_PROFILE` 和 `DIAGNOSTICS_CLEARML_RUN_ID` 时才创建 Task。Stage-I
+  记录通用训练生命周期、loss、learning rate、step time 和 checkpoint；CFM 专属的
+  `traj_collapse`、`flow_time`、层激活诊断只在 Stage-II action-loss 路径启用。普通训练命令仍保持原样。
 - 没有 GPU Agent、Queue 或 Pipeline。
-- 当前 artifact URI 是本机 Fileserver；多机使用前应改为 NAS/MinIO/S3 等共享
-  URI。
-- 当前 SSH tunnel 只提供模板，真实远程主机需要由操作者填写。
+- 远端 UrbanNav 验证已使用 GPFS-backed `file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts`
+  完成 checkpoint 文件树 parity 和两个 lixiang 主机可见性；新项目仍应按自身部署选择
+  NAS/MinIO/S3 等共享 URI。
+- SSH tunnel 的主机、端口和凭据仍由部署者填写，模板不保存密钥。

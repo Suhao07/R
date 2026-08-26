@@ -1,0 +1,59 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "legacy_schema": "urbannav_shared_artifact_uri_v1",
+  "run_id": "urbannav_shared_artifact_uri_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Verify that the shared ClearML artifact URI is visible from two lixiang GPU hosts.",
+  "implementation_state": "implemented",
+  "verification_level": "remote_smoke_passed",
+  "validation_scope": "two_lixiang_hosts_shared_gpfs",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": ["ms-swift"],
+  "commands": [
+    "stat shared ClearML checkpoint artifact on lixiang route 31041",
+    "stat shared ClearML checkpoint artifact on lixiang route 32011"
+  ],
+  "artifacts": [
+    {"name": "shared_checkpoint_zip", "path": "file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts", "exists": null, "bytes": 8716311498}
+  ],
+  "gates": [
+    {"id": "host_31041_visibility", "required": true, "passed": true},
+    {"id": "host_32011_visibility", "required": true, "passed": true},
+    {"id": "shared_size_match", "required": true, "passed": true}
+  ],
+  "output_uri": "file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts",
+  "storage": {
+    "filesystem": "gpfs",
+    "mount": "/mnt/volumes/ad-rl-trans-bd-ga",
+    "artifact": "SR-Nav/UrbanNav non-OPD checkpoint upload 20260826.da607102e5434cee926e86a2bb232685/artifacts/checkpoint_step_1/checkpoint-1.zip",
+    "bytes": 8716311498
+  },
+  "hosts": [
+    {
+      "route_port": 31041,
+      "hostname": "lsm-a100-copy-copy-copy-0",
+      "mount_visible": true,
+      "artifact_visible": true,
+      "artifact_bytes": 8716311498
+    },
+    {
+      "route_port": 32011,
+      "hostname": "lsm-a100-copy-0",
+      "mount_visible": true,
+      "artifact_visible": true,
+      "artifact_bytes": 8716311498
+    }
+  ],
+  "status": "passed",
+  "scope": "same GPFS-backed project volume is visible from two lixiang GPU hosts",
+  "known_limitations": [
+    "this validates shared filesystem visibility, not public network exposure",
+    "the ClearML Web/API services remain loopback-bound and require the SSH tunnel",
+    "S3/MinIO object-storage semantics were not tested"
+  ],
+  "limitations": [
+    "this validates shared filesystem visibility, not public network exposure",
+    "the ClearML Web/API services remain loopback-bound and require the SSH tunnel",
+    "S3/MinIO object-storage semantics were not tested"
+  ]
+}

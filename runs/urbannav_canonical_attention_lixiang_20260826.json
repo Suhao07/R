@@ -1,0 +1,121 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "urbannav_canonical_attention_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Validate canonical UrbanNav non-OPD Stage-II CFM TRAJ-token attention rendering on an existing lixiang checkpoint.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "checkpoint_only",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": [
+    "ms-swift"
+  ],
+  "repositories": [
+    {
+      "id": "ms-swift",
+      "role": "primary",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift",
+      "dirty_state": "local experiment record is uncommitted",
+      "execution_path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift"
+    }
+  ],
+  "dataset": {
+    "description": "One model-ready diagnostic input snapshot emitted by the non-OPD Stage-II training callback.",
+    "source": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_clearml_20260826_viz3/train/checkpoint-1/diagnostic_inputs.pt",
+    "frozen_slice": "checkpoint diagnostic sample_index=0",
+    "physical_rows": 1,
+    "request_rows": 1,
+    "fingerprint": "input snapshot is retained at the shared evidence path"
+  },
+  "model": {
+    "stage_ii_checkpoint": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_clearml_20260826_viz3/train/checkpoint-1",
+    "layer": 23,
+    "query_count": 16,
+    "query_labels": [
+      "traj_00", "traj_01", "traj_02", "traj_03", "traj_04", "traj_05", "traj_06", "traj_07",
+      "traj_08", "traj_09", "traj_10", "traj_11", "traj_12", "traj_13", "traj_14", "traj_15"
+    ],
+    "query_indices": [1446, 1448, 1450, 1452, 1454, 1456, 1458, 1460, 1462, 1464, 1466, 1468, 1470, 1472, 1474, 1476],
+    "key_groups": [
+      "text",
+      "fpv.history_00",
+      "fpv.history_01",
+      "fpv.history_02",
+      "fpv.history_03",
+      "fpv.current",
+      "bev.current"
+    ]
+  },
+  "commands": [
+    {
+      "id": "canonical_attention_replay",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "checkpoint_attention_diagnostics.py --checkpoint checkpoint-1 --inputs diagnostic_inputs.pt --layout diagnostic_token_layout.json --device cuda --dtype bfloat16 --layers 23"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "attention_json",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/canonical_attention_viz_20260826/attention.json",
+      "required": false,
+      "sha256": "fa255e09af0aceed6be32406b52f15671c0ceba9eb5e2f778ce32402d1a54b58"
+    },
+    {
+      "id": "attention_html",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/canonical_attention_viz_20260826/attention.html",
+      "required": false,
+      "sha256": "831c9da6589e23ab013420ac0ee9f378cc917f21b131c87c181f9e19dd4962b1"
+    },
+    {
+      "id": "attention_receipt",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/canonical_attention_viz_20260826/receipt.json",
+      "required": false,
+      "sha256": "1b46c73eff4020762da04d3f5f0d6b38463b765d8f68ee8e33b359eb603fc1c6"
+    },
+    {
+      "id": "diagnostic_inputs",
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_clearml_20260826_viz3/train/checkpoint-1/diagnostic_inputs.pt",
+      "required": false,
+      "hash_status": "not-recomputed-in-this-replay"
+    },
+    {
+      "id": "diagnostic_token_layout",
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_clearml_20260826_viz3/train/checkpoint-1/diagnostic_token_layout.json",
+      "required": false,
+      "hash_status": "not-recomputed-in-this-replay"
+    }
+  ],
+  "gates": [
+    {
+      "id": "canonical_query_layout",
+      "required": true,
+      "passed": true,
+      "evidence": "16 explicit query labels traj_00..traj_15 and processor-bound indices were read from diagnostic_token_layout.json"
+    },
+    {
+      "id": "dense_attention_forward",
+      "required": true,
+      "passed": true,
+      "evidence": "CUDA bfloat16 checkpoint replay returned dense layer 23 attention output"
+    },
+    {
+      "id": "html_json_render",
+      "required": true,
+      "passed": true,
+      "evidence": "attention.html and attention.json were generated with 121 finite scalar entries"
+    }
+  ],
+  "metrics": {
+    "attention_scalar_count": 121,
+    "layer_23_row_entropy": 4.213395595550537,
+    "layer_23_peak_mass": 0.1328972578048706,
+    "layer_23_text_mass": 0.9372846484184265
+  },
+  "known_limitations": [
+    "This is a single checkpoint sample and dense layer 23 only.",
+    "Qwen3.5 linear-attention layers do not produce the same dense attention map.",
+    "The HTML is stored in the shared lixiang evidence URI; it was not appended to a completed ClearML Task in this run.",
+    "Attention mass is a diagnostic statistic and does not establish causal grounding or benchmark quality."
+  ]
+}

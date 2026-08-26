@@ -63,6 +63,13 @@ def report_training_step(run: ClearMLRun, *, iteration: int,
         run.report_scalar(title, series, value, iteration=iteration)
 
 
+def report_training_checkpoint(run: ClearMLRun, *, step: int,
+                               checkpoint_path: Path) -> None:
+    """Record one project-owned checkpoint using the profile upload policy."""
+
+    run.record_checkpoint(checkpoint_path, step=step)
+
+
 def finish_training_observer(run: ClearMLRun, *, success: bool) -> None:
     """Mark the Task terminal state without changing the canonical receipt."""
 

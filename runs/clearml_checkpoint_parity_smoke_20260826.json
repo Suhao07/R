@@ -1,0 +1,56 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "clearml_checkpoint_parity_smoke_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Verify the reusable adapter's explicit checkpoint artifact upload, download, and file-level parity contract.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "synthetic_two_file_artifact",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": ["ms-swift"],
+  "commands": [
+    "ClearML upload_selected checkpoint_step_1",
+    "ms-swift/scripts/sidewalk_nav/clearml_checkpoint_parity.py"
+  ],
+  "artifacts": [
+    {
+      "name": "checkpoint_step_1",
+      "path": "http://127.0.0.1:8081",
+      "exists": null,
+      "bytes": 45,
+      "sha256": "981b57356d5e4de4c6463805b581d87afbd207b122731d3fa5f837ddced19071"
+    }
+  ],
+  "gates": [
+    {"id": "clearml_upload_download", "required": true, "passed": true},
+    {"id": "checkpoint_manifest_parity", "required": true, "passed": true}
+  ],
+  "clearml": {
+    "task_id": "01ea6565e9b54097902194512ead8fab",
+    "artifact_name": "checkpoint_step_1",
+    "output_uri": "http://127.0.0.1:8081",
+    "task_url": "http://127.0.0.1:8080/projects/a6f9d877ef0749879543c6c0b1d1887b/tasks/01ea6565e9b54097902194512ead8fab/general"
+  },
+  "source": {
+    "kind": "directory",
+    "files": 2,
+    "bytes": 45,
+    "sha256": "981b57356d5e4de4c6463805b581d87afbd207b122731d3fa5f837ddced19071"
+  },
+  "restored": {
+    "kind": "directory",
+    "files": 2,
+    "bytes": 45,
+    "sha256": "981b57356d5e4de4c6463805b581d87afbd207b122731d3fa5f837ddced19071"
+  },
+  "parity": true,
+  "known_limitations": [
+    "This smoke uses two small synthetic files.",
+    "It does not prove large checkpoint upload, cross-host storage, model loading, or inference parity."
+  ],
+  "limitations": [
+    "This smoke uses two small synthetic files.",
+    "It does not prove large checkpoint upload, cross-host storage, model loading, or inference parity."
+  ]
+}

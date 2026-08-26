@@ -219,6 +219,7 @@ Elasticsearch，不启动 Agent 服务。`local.env`、固定用户配置和 `st
 - `clearml-artifact-manifest.schema.json`
 - 可复用 `clearml_adapter.py.template`
 - 可复用 `report_payload.py.template`
+- 通用 reporter 的 `--experiment-root` convention bundle 自动发现和章节媒体绑定
 - rank-zero `train_hook.py.template`
 - ClearML observability policy
 
@@ -256,68 +257,23 @@ Elasticsearch，不启动 Agent 服务。`local.env`、固定用户配置和 `st
 该验证证明的是本地 ClearML 结果可视化、Markdown → HTML、公式/表格呈现和证据
 归档链路，不代表 GPU 训练收敛、benchmark validation 或论文结论。
 
-## 7. 尚未实现部分
+## 7. 当前边界与后续能力
 
-统一工作台的本地页面、bundle 聚合、媒体 Range 路由和显式发布入口已经实现；当前
-尚未完成的是对真实浏览器/容器启动环境的长期运行验收，以及跨主机共享 URI。发布
-按钮依赖责任仓 Python 环境和 ClearML 凭据，未提供凭据时会安全返回失败，不会伪造
-Task 成功。
+UrbanNav 非 DF-OPD Stage-II CFM 的可视化插件闭环已经实现：训练 callback、诊断
+Scalars、生命周期 manifest/index/linkage、报告 bundle 自动发现、章节媒体渲染、
+checkpoint artifact URI、下载/parity、恢复推理单样本 parity，以及本地无 Agent 的
+`train → eval → report` 编排均有代码和远端证据。
 
-### P4-1～P4-3 实施方案（已完成设计，尚未声称生产验证）
+仍未达到生产验证等级的事项必须保持独立标记：完整 test view 规模、跨部署对象存储
+（S3/MinIO）和持续浏览器运行；本轮 lixiang 的共享 URI 证据使用 GPFS `file://`，证明
+两台主机可见同一文件，不等同于公网对象存储。严格同 launcher 的 diagnostics A/B 已在
+2 rows/100 steps 上完成，receipt 为 `ResearchWorkflow/runs/urbannav_viz_perf_strict_ab_20260826.json`，
+但它仍不支持训练质量结论。ClearML-native Pipeline、GPU Agent/Queue、暂停/重跑和优先级
+调度属于调度基础设施，不是诊断插件依赖。
 
-这三个阶段可以实施，但必须按下面的边界逐步接入，不能把 no-GPU smoke 或已有
-post-run 结果误报为实时训练验证：
-
-#### P4-1 训练实时 ClearML 埋点
-
-1. 在 `ms-swift` 训练入口创建一个 `train` Task；只由 rank 0 创建 Task 和写
-   ClearML 事件。
-2. 在现有训练循环的日志回调位置调用可复用
-   `ResearchWorkflow/templates/clearml/train_hook.py.template`：上报
-   `iteration`、有限的 `loss`、`learning_rate`、`throughput`，不改变 optimizer、
-   DeepSpeed、checkpoint 或数据语义。
-3. 训练启动时写 provenance/config，结束时上传 receipt、TensorBoard/日志摘要和
-   checkpoint link；checkpoint 默认仍是 `link_only`。
-4. 先用 CPU/合成 logger 验证“Task 创建→标量序列→失败/成功收尾”，再接真实
-   GPU 训练；只有出现最终 step、receipt 和 eval 结果才可称为训练证据。
-
-#### P4-2 远程结果同步与共享 artifact URI
-
-1. 将 `artifacts.output_uri` 从当前本机 Fileserver 改为 NAS、MinIO 或 S3 URI，
-   通过运行环境变量注入，绝不把凭据写入 profile 或 Markdown。
-2. 每个训练机只上传选定的 scorecard、HTML、媒体和 receipt；原始数据、完整预测
-   和 checkpoint 继续按策略禁止或只记录 URI。
-3. 通过 `ssh_tunnel.sh` 暴露 Web/API/Fileserver，验收“远程启动页面可读、artifact
-   URI 可下载、不同主机不依赖另一台主机的 `127.0.0.1`”。
-4. 记录 URI、大小、SHA-256 和上传时间，归档 sidecar 仍由责任仓保存。
-
-#### P4-3 自动 `train → eval → report` Pipeline
-
-1. 使用 ClearML Pipeline/DAG（最终执行仍需要 Agent/Queue）或等价的受控调度器，
-   将同一个 `run_id` 作为参数贯穿 train、eval、report 三个 Task。
-2. `train` 成功且 receipt 完整才触发 `eval`；`eval` 通过 metric/coverage gate
-   才触发 `report`；任何失败都停止后继步骤并留下失败 Task。
-3. 每一步只消费上一步声明的 artifact URI，生成新的 linkage、证据绑定和报告，
-   不通过共享工作目录隐式传参。
-4. 第一版只实现单 Pipeline、单 Queue、手动触发和失败重跑；多队列、优先级和
-   自动扩缩容另列阶段。
-
-### 明确延期
-
-- 真实训练循环内的 step/loss/lr 实时埋点
-- TensorBoard/DeepSpeed 日志自动接入
-- GPU Agent、Queue、暂停/重跑和优先级调度
-- train → eval → report Pipeline/DAG
-
-### 仍需产品化
-
-- 多机器共享 artifact URI（NAS/MinIO/S3）
-- 远程主机的真实 SSH tunnel 配置和验收
-- 更严格的 Web 登录、用户管理和外部访问安全配置
-- ClearML Reports 的自动生成 API/脚本（当前已实现 Markdown → HTML Debug Sample；
-  复杂 Report 页面仍需在 Web UI 中组合）
-- 从 `review_outputs` 选择媒体的图形化上传界面
-- ClearML Web UI 菜单中文化；当前只保证中文实验内容和 Report
+Stage-I LM-only launcher 已接入通用 ClearML 生命周期和 loss/lr/step-time 记录；它没有
+强行复用 CFM/TRAJ 信号。Stage-I hidden-state 专属信号合同、Decision/Flow OPD、机制解释
+（probe、CKA、patching、SAE）继续延期。
 
 ### 当前行为限制
 
@@ -341,10 +297,10 @@ post-run 结果误报为实时训练验证：
 | P1 | 已完成 | schema、profile、manifest、上传策略 |
 | P2 | 已完成 | adapter、评测 reporter、证据 binding |
 | P3 | 已完成 | 本地 Server、no-GPU Task、artifact/media、归档 |
-| P3验收 | 当前 | 用户验收 Web UI 的 Scalars、Debug Samples、Artifacts、Reports |
-| P4-1 | 设计/模板已完成，未接真实训练 | rank-zero 实时 step/loss/lr 埋点与训练收尾 |
-| P4-2 | 设计已完成，当前仍是本机 URI | NAS/MinIO/S3 artifact URI 与 SSH tunnel 验收 |
-| P4-3 | 未实现 | train → eval → report DAG；需要 Agent/Queue |
+| P3验收 | 已完成（review subset） | 用户验收 Web UI 的 Scalars、Debug Samples、Artifacts、Reports |
+| P4-1 | 已完成（UrbanNav Stage-II；Stage-I 通用生命周期） | rank-zero 实时 step/loss/lr/diagnostics 埋点与训练收尾 |
+| P4-2 | 已完成（lixiang GPFS；部署范围有限） | checkpoint URI、下载/parity、双主机共享文件可见性 |
+| P4-3 | 已完成（本地无 Agent） | `train → train-report → eval → eval-report` 编排；ClearML-native DAG 仍延期 |
 
 ## 9. 参考文档
 
@@ -353,3 +309,23 @@ post-run 结果误报为实时训练验证：
 - [Artifacts Reporting](https://clear.ml/docs/latest/docs/guides/reporting/artifacts/)
 - [Task visualization](https://clear.ml/docs/latest/docs/webapp/webapp_exp_track_visual/)
 - [ClearML Reports](https://clear.ml/docs/latest/docs/webapp/webapp_reports/)
+
+## 2026-08-26 当前实现状态
+
+本轮 UrbanNav 非 OPD Stage-II CFM 主线已经完成以下闭环：训练 callback 实时上报
+loss、step time 和诊断标量；`traj_collapse`、`flow_time`、选定层 TRAJ 激活与
+checkpoint layout/input snapshot 通过 ClearML Scalars/Artifacts 保存；报告器按
+`report.md`、`report_manifest.json`、scorecard、charts、images、videos 约定自动发现并
+生成 `report.html`；lixiang 真实 checkpoint 已完成持久 URI、下载、文件树 parity、固定
+单条模型加载/trajectory 恢复 parity 和双主机 GPFS 可见性。
+
+本地 `run_clearml_pipeline.py` 现写入 `running` receipt，按
+`train → train-report → eval → eval-report` 顺序执行，成功后回写最终 `eval_report`；任一
+阶段失败会留下 `failed_stage` 和错误信息。32-row 非 OPD baseline 的结果与哈希见
+`ResearchWorkflow/runs/urbannav_non_opd_baseline32_lixiang_20260826.json`。
+
+当前源码 overlay launcher 的 diagnostics-off/on 严格对照已完成（100 steps、2 rows、单卡）；
+整体 runtime 增加 `8.5604%`、峰值显存变化 `0 GiB`，不把该小样本结果解释为质量结论。
+
+ClearML-native Pipeline、GPU Agent/Queue 和完整 test view 仍是调度/规模扩展，不是当前
+插件可视化闭环的已验证部分；Teacher、DF-OPD Student 和机制解释继续按清单延期。

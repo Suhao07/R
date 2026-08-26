@@ -91,3 +91,12 @@ python /home/ubuntu/WorkSpace/project/SR/Code/ms-swift/scripts/sidewalk_nav/clea
 
 Use `--dry-run` first. `checkpoint_policy: link_only` rejects checkpoint
 uploads and records only the URI plus optional checkpoint metadata.
+
+For one explicit local train/eval/report sequence, use
+`ResearchWorkflow/scripts/run_clearml_pipeline.py`; it reuses the two
+responsibility-repository reporters and does not start a ClearML Agent. The
+checkpoint parity command is
+`ms-swift/scripts/sidewalk_nav/clearml_checkpoint_parity.py`; it fails on any
+manifest mismatch. Historical `review_outputs` roots have a plan-only import
+by default and require `--publish` to create labelled `historical_import`
+Tasks.

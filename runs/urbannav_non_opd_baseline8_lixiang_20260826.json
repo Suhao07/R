@@ -1,0 +1,131 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "urbannav_non_opd_baseline8_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Validate non-OPD UrbanNav Stage-II CFM visualization/evaluation binding on an 8-row frozen test slice in the lixiang production environment.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "review_subset",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": [
+    "ms-swift"
+  ],
+  "repositories": [
+    {
+      "id": "ms-swift",
+      "role": "primary",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift",
+      "dirty_state": "local experiment record is uncommitted",
+      "execution_path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift"
+    }
+  ],
+  "dataset": {
+    "description": "Frozen test_eval_v2 shuffle/control view, first 8 prediction rows with references selected by matching sample_id.",
+    "source": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cached_query_v2_full_20260821_sidewalk_foxglove_r3/splits_v2/test_eval_v2/shuffle/control.jsonl",
+    "frozen_slice": "/tmp/urbannav_baseline8.jsonl",
+    "physical_rows": 8,
+    "request_rows": 8,
+    "fingerprint": "prediction/reference identity coverage is recorded by the evaluator summary hashes"
+  },
+  "model": {
+    "stage_ii_checkpoint": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_100_on_20260826/train/checkpoint-100",
+    "file_tree_sha256": "7ec78a285478c00231ea288bf7f0efb23f4358a876875e88077bf02eb65090be",
+    "query_count": 16,
+    "flow_steps": 8
+  },
+  "commands": [
+    {
+      "id": "non_opd_baseline8_inference",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "UrbanNav inference on /tmp/urbannav_baseline8.jsonl using checkpoint-100"
+    },
+    {
+      "id": "non_opd_baseline8_evaluator",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "python -m swift.sidewalk_nav.cli.eval_stage_ii_cfm --predictions baseline8_predictions.jsonl --references baseline8_refs.jsonl --output-jsonl baseline8_rows.jsonl --summary-json baseline8_summary.json"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "prediction_jsonl",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline8_predictions.jsonl",
+      "required": false,
+      "sha256": "57e9685518066be6e876295f8fcd874a7c58e3b6241e4a6b1f7c1c1be7bf762c"
+    },
+    {
+      "id": "evaluator_rows",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline8_rows.jsonl",
+      "required": false,
+      "sha256": "7463dbf9e351de024e8d7a7f8d072eb20f84b981e800ece85898b14a42e7d456"
+    },
+    {
+      "id": "scorecard",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline8_summary.json",
+      "required": false,
+      "sha256": "5eebcd07cb7c4396eea0bee113adb02bed84401b84b37e6d114a5cdd9a1c85e5"
+    },
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "clearml_task",
+      "path": "not-created",
+      "required": false,
+      "exists": false,
+      "note": "This follow-up reuses the existing visualization evidence and intentionally creates no new ClearML Task."
+    }
+  ],
+  "gates": [
+    {
+      "id": "prediction_reference_identity",
+      "required": true,
+      "passed": true,
+      "evidence": "prediction_count=8 and reference_count=8 after sample_id matching"
+    },
+    {
+      "id": "parse_and_strict_success",
+      "required": true,
+      "passed": true,
+      "evidence": "parse_success=1.0 and strict_success=1.0"
+    },
+    {
+      "id": "finite_trajectory_values",
+      "required": true,
+      "passed": true,
+      "evidence": "nan_inf=0 and false_freeze_rate_given_move=0"
+    },
+    {
+      "id": "scorecard_artifact_binding",
+      "required": true,
+      "passed": true,
+      "evidence": "prediction, evaluator rows and summary hashes are recorded in the receipt"
+    }
+  ],
+  "metrics": {
+    "num_samples": 8.0,
+    "prediction_count": 8,
+    "reference_count": 8,
+    "valid_action_steps": 32.0,
+    "parse_success": 1.0,
+    "strict_success": 1.0,
+    "action_ade_ego": 1.463803306221962,
+    "action_fde_ego": 1.0276573449373245,
+    "action_l2_1s_ego": 1.8298282027244568,
+    "action_l2_2s_ego": 1.459529086947441,
+    "nan_inf": 0.0,
+    "false_freeze_rate_given_move": 0.0,
+    "pass_t_latency_sec": 2.5869290377013385,
+    "moving_count": 8.0,
+    "stop_count": 0.0
+  },
+  "known_limitations": [
+    "This is an 8-row review slice, not a full benchmark evaluation.",
+    "The scorecard does not establish training quality, convergence or generalization.",
+    "No new ClearML Task was created for this follow-up; the shared evidence files remain the authoritative outputs.",
+    "The complete test view and ClearML-native Pipeline/Agent/Queue remain separate scale and scheduling work."
+  ]
+}

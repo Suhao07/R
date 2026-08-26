@@ -1,0 +1,130 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "urbannav_non_opd_baseline32_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Extend the non-OPD UrbanNav Stage-II CFM visualization/evaluation binding from 8 rows to a 32-row frozen control view on lixiang.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "review_subset",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": [
+    "ms-swift"
+  ],
+  "repositories": [
+    {
+      "id": "ms-swift",
+      "role": "primary",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift",
+      "dirty_state": "local experiment record is uncommitted",
+      "execution_path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift"
+    }
+  ],
+  "dataset": {
+    "description": "First 32 rows of the frozen test_eval_v2 shuffle/control view; references were selected by matching prediction sample_id.",
+    "source": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cached_query_v2_full_20260821_sidewalk_foxglove_r3/splits_v2/test_eval_v2/shuffle/control.jsonl",
+    "frozen_slice": "/tmp/urbannav_baseline32.jsonl",
+    "physical_rows": 32,
+    "request_rows": 32,
+    "fingerprint": "prediction/reference identity coverage is recorded by the evaluator summary hashes"
+  },
+  "model": {
+    "stage_ii_checkpoint": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_100_on_20260826/train/checkpoint-100",
+    "file_tree_sha256": "7ec78a285478c00231ea288bf7f0efb23f4358a876875e88077bf02eb65090be",
+    "query_count": 16,
+    "flow_steps": 8
+  },
+  "commands": [
+    {
+      "id": "non_opd_baseline32_inference",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "python -m swift.sidewalk_nav.cli.infer_stage_ii_cfm_v2 --model checkpoint-6079 --checkpoint-dir checkpoint-100 --query-count 16 --flow-steps 8 --dataset /tmp/urbannav_baseline32.jsonl"
+    },
+    {
+      "id": "non_opd_baseline32_evaluator",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "python -m swift.sidewalk_nav.cli.eval_stage_ii_cfm --predictions predictions.jsonl --references references.jsonl --output-jsonl rows.jsonl --summary-json summary.json"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "prediction_jsonl",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline32_eval_20260826/predictions.jsonl",
+      "required": false,
+      "sha256": "2b766b283c0f1c436c7c23b5fe513651ec3ae91246210900cceeae4c1f8cef76"
+    },
+    {
+      "id": "reference_jsonl",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline32_eval_20260826/references.jsonl",
+      "required": false,
+      "sha256": "b46ca9746348a6c969b1fef1f9141c8761abaf53e5808ef854c0f4b4f9e0f365"
+    },
+    {
+      "id": "evaluator_rows",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline32_eval_20260826/rows.jsonl",
+      "required": false,
+      "sha256": "67f34ec4106ba05beab6ecfc0dfa95485542df30dbd76f6d78a947230c9babfd"
+    },
+    {
+      "id": "scorecard",
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/baseline32_eval_20260826/summary.json",
+      "required": false,
+      "sha256": "e37ef10131fef98e1629d864f56383346a207533fbfd7e368329aa9e0d27ae58"
+    },
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+      "required": true,
+      "exists": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "prediction_reference_identity",
+      "required": true,
+      "passed": true,
+      "evidence": "prediction_count=32 and reference_count=32 after sample_id matching"
+    },
+    {
+      "id": "parse_and_strict_success",
+      "required": true,
+      "passed": true,
+      "evidence": "parse_success=1.0 and strict_success=1.0"
+    },
+    {
+      "id": "finite_trajectory_values",
+      "required": true,
+      "passed": true,
+      "evidence": "nan_inf=0 and false_freeze_rate_given_move=0"
+    },
+    {
+      "id": "evaluator_artifact_binding",
+      "required": true,
+      "passed": true,
+      "evidence": "prediction, reference, evaluator rows and summary hashes are recorded in the receipt"
+    }
+  ],
+  "metrics": {
+    "num_samples": 32.0,
+    "prediction_count": 32,
+    "reference_count": 32,
+    "valid_action_steps": 32.0,
+    "parse_success": 1.0,
+    "strict_success": 1.0,
+    "action_ade_ego": 1.4330284018069506,
+    "action_fde_ego": 0.976511973887682,
+    "action_l2_1s_ego": 1.7589930780231953,
+    "action_l2_2s_ego": 1.4612743631005287,
+    "nan_inf": 0.0,
+    "false_freeze_rate_given_move": 0.0,
+    "pass_t_latency_sec": 2.6945793132763356,
+    "moving_count": 32.0,
+    "stop_count": 0.0
+  },
+  "known_limitations": [
+    "This is a 32-row frozen slice, not a full benchmark evaluation.",
+    "The slice contains one dataset-source group and an unknown direction-label group.",
+    "No new ClearML Task was created; the outputs are retained in the shared evidence URI.",
+    "The evaluator summary contains NaN for metrics whose denominator is absent in this moving-only slice; NaN/Inf trajectory validation remains zero."
+  ]
+}

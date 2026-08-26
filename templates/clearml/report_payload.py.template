@@ -1,4 +1,4 @@
-"""Generic post-run ClearML reporter for JSON scorecards and selected files.
+"""Generic post-run ClearML reporter for JSON scorecards and experiment bundles.
 
 Copy this file beside ``clearml_adapter.py`` in a responsibility repository.
 The project profile supplies the metric target names and optional dotted JSON
@@ -14,6 +14,24 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from clearml_adapter import (ClearMLRun, build_run_configuration, load_profile)
+
+
+_BUNDLE_ARTIFACTS = {
+    'report.md': 'report_markdown',
+    'report.html': 'report_html',
+    'report_manifest.json': 'report_manifest',
+    'scorecard.json': 'scorecard',
+    'scorecard.csv': 'scorecard_csv',
+    'receipt.json': 'receipt',
+    'finished_receipt.json': 'receipt',
+    'visualization_manifest.json': 'visualization_manifest',
+    'visualization_index.json': 'visualization_index',
+}
+_BUNDLE_MEDIA_SUFFIXES = {
+    '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg',
+    '.mp4', '.webm', '.mov', '.mkv', '.mp3', '.wav', '.ogg', '.html',
+}
+_DEFAULT_MEDIA_DIRECTORIES = ('charts', 'videos', 'images', 'media')
 
 
 def dotted_get(value: Any, path: str) -> Any:
@@ -57,6 +75,107 @@ def parse_media_spec(spec: str) -> tuple[str, str, Path]:
     if not title or not separator or not series or not separator2 or not raw_path:
         raise ValueError(f'Invalid media {spec!r}; expected title=series=path')
     return title, series, Path(raw_path).expanduser()
+
+
+def _bundle_path(root: Path, raw_path: str | Path, label: str) -> Path:
+    """Resolve one bundle path and keep it inside the experiment directory."""
+
+    path = Path(raw_path).expanduser()
+    if not path.is_absolute():
+        path = root / path
+    resolved = path.resolve(strict=False)
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError as exc:
+        raise ValueError(f'{label} must stay inside experiment root: {resolved}') from exc
+    if not resolved.is_file():
+        raise FileNotFoundError(f'{label}: {resolved}')
+    return resolved
+
+
+def _bundle_media(root: Path, manifest: Path | None,
+                  media_directories: Sequence[str]) -> list[tuple[str, str, Path]]:
+    """Read manifest-selected media, or configured media directories."""
+
+    if manifest is not None:
+        payload = json.loads(manifest.read_text(encoding='utf-8'))
+        sections = payload.get('sections', payload) if isinstance(payload, Mapping) else None
+        if not isinstance(sections, Mapping):
+            raise ValueError('report_manifest.json must be an object or contain a sections object')
+        selected: list[tuple[str, str, Path]] = []
+        for section, entries in sections.items():
+            if not isinstance(section, str) or not section.strip():
+                raise ValueError('report_manifest section names must be non-empty strings')
+            if isinstance(entries, (str, Mapping)):
+                entries = [entries]
+            if not isinstance(entries, Sequence) or isinstance(entries, (str, bytes)):
+                raise ValueError(f'report_manifest section {section!r} must contain a list')
+            for entry in entries:
+                title = None
+                raw_path = entry
+                if isinstance(entry, Mapping):
+                    raw_path = entry.get('path')
+                    title = entry.get('title')
+                if not isinstance(raw_path, str) or not raw_path:
+                    raise ValueError(f'report_manifest section {section!r} has an invalid media entry')
+                path = _bundle_path(root, raw_path, f'report_manifest/{section}')
+                if path.suffix.lower() not in _BUNDLE_MEDIA_SUFFIXES:
+                    raise ValueError(f'unsupported report media type: {path}')
+                selected.append((str(title or path.stem), section, path))
+        return selected
+
+    selected = []
+    for directory in media_directories:
+        media_root = root / directory
+        if not media_root.is_dir():
+            continue
+        for path in sorted(media_root.rglob('*')):
+            if path.is_file() and path.suffix.lower() in _BUNDLE_MEDIA_SUFFIXES:
+                selected.append((path.stem.replace('_', ' '), directory, path.resolve()))
+    return selected
+
+
+def discover_experiment_bundle(experiment_root: Path,
+                               conventions: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Discover the allowlisted files in one convention-based experiment root."""
+
+    root = experiment_root.expanduser().resolve()
+    if not root.is_dir():
+        raise NotADirectoryError(root)
+    settings = conventions if isinstance(conventions, Mapping) else {}
+    markdown = _bundle_path(root, str(settings.get('markdown', 'report.md')), 'report Markdown')
+    scorecard = _bundle_path(root, 'scorecard.json', 'scorecard')
+    html_candidate = root / str(settings.get('html', 'report.html'))
+    html_path = html_candidate.resolve(strict=False)
+    html_path.relative_to(root)
+    manifest_candidate = root / str(settings.get('manifest', 'report_manifest.json'))
+    manifest = manifest_candidate.resolve() if manifest_candidate.is_file() else None
+    artifacts: list[tuple[str, Path]] = []
+
+    def add(name: str, path: Path | None) -> None:
+        if path is None or not path.is_file():
+            return
+        if all(existing.resolve() != path.resolve() for _, existing in artifacts):
+            artifacts.append((name, path.resolve()))
+
+    add('report_markdown', markdown)
+    add('report_html', html_path if html_path.is_file() else None)
+    add('report_manifest', manifest)
+    add('scorecard', scorecard)
+    for filename, name in _BUNDLE_ARTIFACTS.items():
+        if filename in {'report.md', 'report.html', 'report_manifest.json', 'scorecard.json'}:
+            continue
+        add(name, root / filename)
+    media_directories = settings.get('media_directories', _DEFAULT_MEDIA_DIRECTORIES)
+    if not isinstance(media_directories, Sequence) or isinstance(media_directories, (str, bytes)):
+        raise ValueError('experiment_bundle.media_directories must be a list')
+    for directory in media_directories:
+        directory_path = Path(str(directory))
+        if directory_path.is_absolute() or '..' in directory_path.parts:
+            raise ValueError(f'experiment bundle media directory must stay inside root: {directory}')
+    media = _bundle_media(root, manifest, [str(item) for item in media_directories])
+    return {'root': root, 'markdown': markdown, 'html': html_path, 'scorecard': scorecard,
+            'manifest': manifest, 'artifacts': artifacts, 'media': media}
 
 
 def _finite_number(value: Any) -> float | None:
@@ -122,9 +241,10 @@ def report_payload(
     profile_path: Path,
     run_id: str,
     task_kind: str,
-    summary_path: Path,
+    summary_path: Path | None,
     artifact_specs: Sequence[str],
-    linkage_path: Path,
+    linkage_path: Path | None,
+    experiment_root: Path | None = None,
     experiment_record: Path | None = None,
     receipt: Path | None = None,
     visualization_manifest: Path | None = None,
@@ -138,7 +258,7 @@ def report_payload(
     description: str | None = None,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    """Report configured metrics and explicitly selected evidence."""
+    """Report configured metrics and a convention-based bundle."""
 
     if not run_id or any(char.isspace() for char in run_id):
         raise ValueError(
@@ -148,12 +268,43 @@ def report_payload(
     if profile_errors:
         raise ValueError('Invalid runtime profile:\n- ' +
                          '\n- '.join(profile_errors))
+    bundle = None
+    if experiment_root is not None:
+        bundle = discover_experiment_bundle(
+            experiment_root,
+            profile.get('experiment_bundle'),
+        )
+        summary_path = summary_path or bundle['scorecard']
+        experiment_record = experiment_record or bundle['markdown']
+        visualization_manifest = visualization_manifest or (
+            bundle['root'] / 'visualization_manifest.json'
+            if (bundle['root'] / 'visualization_manifest.json').is_file() else None)
+        visualization_index = visualization_index or (
+            bundle['root'] / 'visualization_index.json'
+            if (bundle['root'] / 'visualization_index.json').is_file() else None)
+        linkage_path = linkage_path or (bundle['root'] / 'clearml_task_linkage.json')
+    if linkage_path is None:
+        raise ValueError('linkage_path or experiment_root is required')
+    if summary_path is None:
+        raise ValueError('summary_json or experiment_root/scorecard.json is required')
     summary = json.loads(summary_path.read_text(encoding='utf-8'))
     if not isinstance(summary, Mapping):
         raise ValueError('summary JSON must be an object')
 
-    selected_artifacts = [parse_named_path(spec) for spec in artifact_specs]
-    selected_artifacts.append(('scorecard', summary_path))
+    selected_artifacts: list[tuple[str, Path]] = []
+
+    def add_artifact(name: str, path: Path | None) -> None:
+        if path is None:
+            return
+        resolved = path.expanduser().resolve()
+        if not resolved.is_file():
+            raise FileNotFoundError(f'{name}: {resolved}')
+        if all(existing.resolve() != resolved for _, existing in selected_artifacts):
+            selected_artifacts.append((name, resolved))
+
+    for name, path in (parse_named_path(spec) for spec in artifact_specs):
+        add_artifact(name, path)
+    add_artifact('scorecard', summary_path)
     for name, path in (
         ('experiment_record', experiment_record),
         ('receipt', receipt),
@@ -161,16 +312,24 @@ def report_payload(
         ('visualization_index', visualization_index),
     ):
         if path is not None:
-            selected_artifacts.append((name, path))
-    for name, path in selected_artifacts:
-        if not path.is_file():
-            raise FileNotFoundError(f'{name}: {path}')
+            if bundle is not None and name == 'experiment_record' and path.resolve() == bundle['markdown'].resolve():
+                continue
+            add_artifact(name, path)
+    if bundle is not None:
+        for name, path in bundle['artifacts']:
+            add_artifact(name, path)
 
     media_policy = profile['media']['upload']
     media_limit = int(profile['media']['max_debug_samples_per_series'])
     selected_media: list[tuple[str, str, Path]] = []
     media_counts: dict[str, int] = {}
-    for spec in media_specs:
+    selected_media_specs = list(media_specs)
+    if bundle is not None:
+        if bundle['html'].is_file():
+            selected_media_specs.insert(0, f'实验报告=report={bundle["html"]}')
+        selected_media_specs.extend(
+            f'{title}={series}={path}' for title, series, path in bundle['media'])
+    for spec in selected_media_specs:
         title, series, path = parse_media_spec(spec)
         if media_policy == 'never':
             raise ValueError(
@@ -210,6 +369,8 @@ def report_payload(
             'metrics': values,
             'artifact_names': [name for name, _ in selected_artifacts],
             'media_candidates': len(selected_media),
+            'experiment_root': str(bundle['root']) if bundle is not None else None,
+            'auto_discovered': bundle is not None,
         }
 
     run = ClearMLRun(profile, run_id=run_id, task_kind=task_kind)
@@ -250,6 +411,8 @@ def report_payload(
         'metrics': values,
         'artifact_names': [name for name, _ in selected_artifacts],
         'media_candidates': len(selected_media),
+        'experiment_root': str(bundle['root']) if bundle is not None else None,
+        'auto_discovered': bundle is not None,
     }
 
 
@@ -258,9 +421,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument('--profile', required=True, type=Path)
     parser.add_argument('--run-id', required=True)
     parser.add_argument('--task-kind', default='evaluate')
-    parser.add_argument('--summary-json', required=True, type=Path)
+    parser.add_argument('--summary-json', type=Path,
+                        help='Scorecard JSON; defaults to <experiment-root>/scorecard.json')
+    parser.add_argument('--experiment-root', type=Path,
+                        help='Convention-based experiment directory; auto-discovers report, scorecard, manifest and media')
     parser.add_argument('--artifact', action='append', default=[])
-    parser.add_argument('--linkage-out', required=True, type=Path)
+    parser.add_argument('--linkage-out', type=Path,
+                        help='Task linkage output; defaults to <experiment-root>/clearml_task_linkage.json')
     parser.add_argument('--experiment-record', type=Path)
     parser.add_argument('--receipt', type=Path)
     parser.add_argument('--visualization-manifest', type=Path)
@@ -285,6 +452,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         summary_path=args.summary_json,
         artifact_specs=args.artifact,
         linkage_path=args.linkage_out,
+        experiment_root=args.experiment_root,
         experiment_record=args.experiment_record,
         receipt=args.receipt,
         visualization_manifest=args.visualization_manifest,

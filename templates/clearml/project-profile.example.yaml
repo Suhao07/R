@@ -32,6 +32,9 @@ tasks:
   evaluate:
     owner_repo: replace_me
     task_type: testing
+  review:
+    owner_repo: replace_me
+    task_type: application
 
 metrics:
   train:

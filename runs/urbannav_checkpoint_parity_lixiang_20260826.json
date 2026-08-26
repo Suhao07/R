@@ -1,0 +1,67 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "urbannav_checkpoint_parity_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Verify a real UrbanNav non-OPD checkpoint artifact upload, download, and file-level parity on lixiang shared storage.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "real_urbannav_non_opd_checkpoint_file_parity",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": ["ms-swift"],
+  "commands": [
+    "ClearML upload_selected checkpoint_step_1 on lixiang",
+    "ms-swift/scripts/sidewalk_nav/clearml_checkpoint_parity.py"
+  ],
+  "artifacts": [
+    {
+      "name": "checkpoint_step_1",
+      "path": "file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts",
+      "exists": null,
+      "bytes": 8716311498,
+      "sha256": "a23509340cb5957d17291f1fecfa1b2236f1abab6011639d443f022ccc1040f9"
+    }
+  ],
+  "gates": [
+    {"id": "checkpoint_file_tree_parity", "required": true, "passed": true},
+    {"id": "runtime_checkpoint_contract", "required": true, "passed": true}
+  ],
+  "clearml": {
+    "task_id": "da607102e5434cee926e86a2bb232685",
+    "artifact_name": "checkpoint_step_1",
+    "output_uri": "file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts",
+    "task_url": "http://127.0.0.1:18180/projects/a6f9d877ef0749879543c6c0b1d1887b/tasks/da607102e5434cee926e86a2bb232685/general"
+  },
+  "source": {
+    "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_smoke_20260826_viz/train/checkpoint-1",
+    "kind": "directory",
+    "files": 19,
+    "bytes": 11027294887,
+    "sha256": "a23509340cb5957d17291f1fecfa1b2236f1abab6011639d443f022ccc1040f9"
+  },
+  "restored": {
+    "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/checkpoint-1-restored",
+    "kind": "directory",
+    "files": 19,
+    "bytes": 11027294887,
+    "sha256": "a23509340cb5957d17291f1fecfa1b2236f1abab6011639d443f022ccc1040f9"
+  },
+  "parity": true,
+  "runtime_checkpoint_contract_equal": true,
+  "runtime_checkpoint_contract": {
+    "training_contract": "stage_ii_cfm_v2",
+    "query_count": 16,
+    "action_head": "flow_action",
+    "validation": "validate_stage_ii_checkpoint on source and restored sidecars"
+  },
+  "known_limitations": [
+    "The check compares the complete file tree, byte counts, and SHA-256 digest.",
+    "The full 4B backbone load and inference output parity were not run.",
+    "Cross-host access to the file URI was not run."
+  ],
+  "limitations": [
+    "The check compares the complete file tree, byte counts, and SHA-256 digest.",
+    "The full 4B backbone load and inference output parity were not run.",
+    "Cross-host access to the file URI was not run."
+  ]
+}

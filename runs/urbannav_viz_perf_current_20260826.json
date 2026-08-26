@@ -1,0 +1,142 @@
+{
+  "schema_version": "urbannav_visualization_perf_v1",
+  "run_id": "urbannav_viz_perf_current_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "验证当前 UrbanNav 非 DF-OPD Stage-II CFM 诊断插件在 lixiang 真实 CUDA 环境中的 100-step 信号写出和整体训练开销。",
+  "status": "passed_with_scope_boundary",
+  "implementation_state": "implemented",
+  "verification_level": "remote_smoke_passed",
+  "validation_scope": "mini_sample",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": ["ms-swift"],
+  "commands": [
+    {
+      "id": "diagnostics_off_100_steps",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "run_stage_ii_cfm_v2_4b.sh with diagnostics disabled"
+    },
+    {
+      "id": "diagnostics_on_100_steps",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+      "command": "current overlay run_stage_ii_cfm_v2_4b.sh with traj_collapse,flow_time,traj_layer_activation"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "performance_receipt",
+      "path": "ResearchWorkflow/runs/urbannav_viz_perf_current_20260826.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "diagnostics_on_log",
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_on_diag_20260826/train/logging.jsonl",
+      "required": true
+    },
+    {
+      "id": "diagnostics_on_checkpoint",
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_on_diag_20260826/train/checkpoint-100",
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "non_opd_100_step_completion",
+      "required": true,
+      "passed": true,
+      "evidence": "diagnostics-on reached 100/100 and saved checkpoint-100."
+    },
+    {
+      "id": "diagnostic_key_presence",
+      "required": true,
+      "passed": true,
+      "evidence": "JSONL contains cfm_flow, layer_0023, traj_collapse, traj_query_source and traj_tokens."
+    },
+    {
+      "id": "strict_same_launcher_ab",
+      "required": false,
+      "passed": false,
+      "evidence": "off used the stale production launcher; on used the current overlay launcher."
+    }
+  ],
+  "project": "UrbanNav",
+  "training_mode": "stage_ii_cfm_non_opd",
+  "source": {
+    "repository": "ms-swift",
+    "commit": "8221a579dfac8cb2f4d462db8fbdca0a81157912",
+    "worktree": "dirty; current overlay copied only for remote validation"
+  },
+  "remote": {
+    "route": "lpai-jump -> ssh-d.lpai.lixiang.com:31041",
+    "host": "lsm-a100-copy-copy-copy-0",
+    "checkout": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cosmos3_production_checkout_20260826/ms-swift",
+    "python": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/envs/urbannav_ms_swift_v31/bin/python",
+    "torch": "2.8.0+cu128",
+    "cuda": true,
+    "gpu": "0"
+  },
+  "invariants": {
+    "steps": 100,
+    "seed": 42,
+    "training_rows": 2,
+    "condition_mode": "cached_traj_query_v2",
+    "query_count": 16,
+    "flow_steps": 2,
+    "checkpoint_source": "checkpoint-6079"
+  },
+  "arms": {
+    "diagnostics_off": {
+      "root": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_off_20260826",
+      "launcher": "production checkout launcher",
+      "train_runtime_s": 428.6986,
+      "train_steps_per_second": 0.233,
+      "train_loss": 0.36984375,
+      "peak_memory_gib": 15.17,
+      "checkpoint": "train/checkpoint-100"
+    },
+    "diagnostics_on": {
+      "root": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_on_diag_20260826",
+      "launcher": "current source overlay launcher",
+      "plugins": [
+        "traj_collapse",
+        "flow_time",
+        "traj_layer_activation"
+      ],
+      "layers": [23],
+      "cadence_steps": 1,
+      "train_runtime_s": 456.9306,
+      "train_steps_per_second": 0.219,
+      "train_loss": 0.3783374,
+      "peak_memory_gib": 15.17,
+      "logging_lines": 102,
+      "diagnostic_occurrences": 5000,
+      "diagnostic_categories": [
+        "cfm_flow",
+        "layer_0023",
+        "traj_collapse",
+        "traj_query_source",
+        "traj_tokens"
+      ],
+      "checkpoint": "train/checkpoint-100"
+    }
+  },
+  "comparison": {
+    "runtime_delta_s": 28.232,
+    "runtime_delta_percent": 6.5852,
+    "throughput_delta_percent": -6.0086,
+    "peak_memory_delta_gib": 0.0,
+    "interpretation": "整体开销方向性证据；未拆分逐 step wall-clock。",
+    "scope_boundary": "两组数据、seed、模型、GPU 和 step 数一致。off 使用 production checkout launcher；该 launcher 未传递 diagnostics_plugins，因此 diagnostics 关闭。on 使用当前源码 overlay launcher 以传递插件参数。两者不是完全相同 shell 命令，runtime 差异不能作为严格因果归因。"
+  },
+  "evidence": {
+    "on_log": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_on_diag_20260826/train/logging.jsonl",
+    "on_checkpoint": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_perf_current_on_diag_20260826/train/checkpoint-100",
+    "clearml_task_created": false,
+    "quality_boundary": "100-step、2-row 训练 smoke 只验证插件接入、信号写出和工程开销；不支持收敛、泛化或 benchmark 结论。"
+  },
+  "known_limitations": [
+    "100 steps、2 rows 只验证真实训练中的插件接入和产物写出，不支持收敛、泛化或 benchmark 结论。",
+    "两组使用的 shell launcher 不完全相同，runtime 差异不能作严格逐项因果归因。",
+    "JSONL 没有独立逐 step wall-clock；input snapshot 和远程 ClearML 上传成本没有纳入本次对照。"
+  ]
+}

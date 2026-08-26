@@ -1,0 +1,67 @@
+schema_version: clearml_project_profile_v1
+project_id: fwtw
+clearml_project: FWTW
+
+network:
+  server_profile: local_ssh_tunnel
+
+documents:
+  experiment_roots:
+    - ../../../ms-swift/docs/Experiments
+  review_root: ../../../review_outputs
+
+experiment_bundle:
+  markdown: report.md
+  html: report.html
+  manifest: report_manifest.json
+  media_directories:
+    - charts
+    - videos
+    - images
+    - media
+
+artifacts:
+  output_uri: ${CLEARML_DEFAULT_OUTPUT_URI}
+  checkpoint_policy: link_only
+  review_bundle_policy: upload_selected
+  raw_data_policy: never_upload
+
+tasks:
+  train:
+    owner_repo: FWTW
+    task_type: training
+  evaluate:
+    owner_repo: FWTW
+    task_type: testing
+
+metrics:
+  train:
+    loss: train/loss
+    valid_samples: train/valid_samples
+    learning_rate: train/learning_rate
+    grad_norm_pre_clip: train/grad_norm_pre_clip
+    amp_scale: train/amp_scale
+    step_time_s: train/step_time_s
+    throughput: train/throughput
+  evaluation:
+    ADE: evaluation/ADE
+    FDE: evaluation/FDE
+    yaw_MAE: evaluation/yaw_MAE
+    goal_endpoint_error: evaluation/goal_endpoint_error
+    goal_progress: evaluation/goal_progress
+    valid_count: evaluation/valid_count
+    sample_count: evaluation/sample_count
+
+metric_sources:
+  evaluation:
+    ADE: metrics.ADE
+    FDE: metrics.FDE
+    yaw_MAE: metrics.yaw_MAE
+    goal_endpoint_error: metrics.goal_endpoint_error
+    goal_progress: metrics.goal_progress
+    valid_count: metrics.valid_count
+    sample_count: metrics.sample_count
+
+media:
+  max_debug_samples_per_series: 30
+  upload: selected_review_only

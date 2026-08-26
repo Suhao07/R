@@ -1,0 +1,71 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "legacy_schema": "urbannav_checkpoint_restore_inference_parity_v1",
+  "run_id": "urbannav_checkpoint_restore_inference_parity_lixiang_20260826",
+  "workstream_id": "clearml-observability-template",
+  "objective": "Verify fixed-input model loading and trajectory output parity after restoring a ClearML checkpoint artifact.",
+  "implementation_state": "implemented",
+  "verification_level": "remote_smoke_passed",
+  "validation_scope": "one_fixed_non_opd_stage_ii_row",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/urbannav_non_opd_visualization_validation_20260826.md",
+  "repository_ids": ["ms-swift"],
+  "commands": [
+    "swift.sidewalk_nav.cli.infer_stage_ii_cfm_v2 on source checkpoint",
+    "swift.sidewalk_nav.cli.infer_stage_ii_cfm_v2 on restored checkpoint"
+  ],
+  "artifacts": [
+    {"name": "source_inference", "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/source_inference.jsonl", "exists": null, "sha256": "df9a84e246b5307608bcbe4daf244c14968f72573f69f7c7ebe0ee691c3fb194"},
+    {"name": "restored_inference", "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/restored_inference.jsonl", "exists": null, "sha256": "5968cbd2d7857121fdc18eac01b52d35168f3e8e7381b572ad2b7acf2c1936f5"}
+  ],
+  "gates": [
+    {"id": "checkpoint_cli_digest", "required": true, "passed": true},
+    {"id": "trajectory_output_parity", "required": true, "passed": true},
+    {"id": "condition_digest_parity", "required": true, "passed": true}
+  ],
+  "host": "lsm-a100-copy-copy-copy-0",
+  "environment": {
+    "python": "3.10.18",
+    "torch": "2.8.0+cu128",
+    "cuda_visible_devices": "1"
+  },
+  "checkpoint": {
+    "clearml_task_id": "da607102e5434cee926e86a2bb232685",
+    "artifact_name": "checkpoint_step_1",
+    "output_uri": "file:///mnt/volumes/ad-rl-trans-bd-ga/suh/clearml-artifacts",
+    "source": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/urbannav_viz_training_smoke_20260826_viz/train/checkpoint-1",
+    "restored": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/checkpoint-1-restored",
+    "cli_digest_source": "12c889dcb9bacf280392a9de6b6c7aa2049b254966e80655f5d950a610ca1d72",
+    "cli_digest_restored": "12c889dcb9bacf280392a9de6b6c7aa2049b254966e80655f5d950a610ca1d72",
+    "file_tree_sha256": "a23509340cb5957d17291f1fecfa1b2236f1abab6011639d443f022ccc1040f9",
+    "files": 19,
+    "bytes": 11027294887
+  },
+  "inference": {
+    "dataset": "/tmp/urbannav_restore_infer_one.jsonl",
+    "rows": 1,
+    "model": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/cached_query_v2_full_20260821_sidewalk_foxglove_r10/train/checkpoint-6079",
+    "query_count": 16,
+    "flow_steps": 8,
+    "global_eval_seed": 0,
+    "source_output": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/source_inference.jsonl",
+    "restored_output": "/mnt/volumes/ad-rl-trans-bd-ga/suh/urbannav_clearml_evidence/restored_inference.jsonl",
+    "source_output_sha256": "df9a84e246b5307608bcbe4daf244c14968f72573f69f7c7ebe0ee691c3fb194",
+    "restored_output_sha256": "5968cbd2d7857121fdc18eac01b52d35168f3e8e7381b572ad2b7acf2c1936f5",
+    "trajectory_ego_t_sha256": "b9119ed95fa3009476c0631095f7a0207656be9da218405e5b98fe768a7137ff",
+    "trajectory_equal": true,
+    "condition_digest_equal": true,
+    "metadata_difference": "pass_t_latency_sec differs because it is measured at runtime"
+  },
+  "status": "passed",
+  "scope": "one fixed non-OPD Stage-II CFM row; model load and trajectory output parity",
+  "known_limitations": [
+    "not a full benchmark evaluation",
+    "not a multi-host access test",
+    "does not establish training quality or convergence"
+  ],
+  "limitations": [
+    "not a full benchmark evaluation",
+    "not a multi-host access test",
+    "does not establish training quality or convergence"
+  ]
+}
