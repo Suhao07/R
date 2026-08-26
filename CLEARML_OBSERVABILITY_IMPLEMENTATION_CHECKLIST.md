@@ -52,7 +52,7 @@ SSH/tmux 训练和评测命令，不安装 GPU Agent，不自动上传原始数�
 - [x] 生成 ClearML Task ID ↔ finished receipt ↔ experiment document binding sidecar
 - [x] 核验真实 ClearML Task、artifact 和终态
 - [x] 创建独立 evidence archive Task：`91a4d6e502d446ecb18be516a83055b7`
-- [ ] 用户人工验收 Web UI 中的指标、artifact、文档和 Debug Sample
+- [x] 用户人工验收 Web UI 中的指标、artifact、文档和 Debug Sample（2026-08-26，用户确认通过）
 
 ## P4：训练期诊断与后续独立阶段
 
@@ -69,7 +69,7 @@ SSH/tmux 训练和评测命令，不安装 GPU Agent，不自动上传原始数�
   GPU memory、吞吐和 loss；1-step smoke 不足以判断训练影响
 - [ ] 在上述非 OPD Task 中核验 ClearML Scalars、lifecycle manifest/index/linkage、checkpoint
   layout/input snapshot 和 Research Hub 入口
-- [ ] 完成用户对 ClearML 与 Research Hub 的人工校阅，确认图表、artifact、Markdown/HTML 和媒体
+- [x] 完成用户对 ClearML 与 Research Hub 的人工校阅，确认图表、artifact、Markdown/HTML 和媒体
   入口可用
 - [ ] 如果“原始训练”指 Stage-I `run_stage_i_joint_4b_full.sh` 的 LM-only 路径，单独增加
   LM-only 训练信号适配；当前 `SidewalkSftArguments` 会要求 action head 和正 action loss，不能
