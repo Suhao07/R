@@ -56,6 +56,28 @@ SSH/tmux 训练和评测命令，不安装 GPU Agent，不自动上传原始数�
 
 ## P4：训练期诊断与后续独立阶段
 
+### 2026-08-26 当前主线：UrbanNav 原始 Stage-II CFM（不含 DF-OPD）
+
+本阶段先收敛到现有 `run_stage_ii_cfm_v2_4b.sh` →
+`swift.sidewalk_nav.cli.train` 训练入口，不调用 `train_df_opd.py`，不加载 Teacher，
+不使用 `df_opd_diagnostics_only`。目标是把训练中间信号接入现有 pipeline，并在 ClearML
+和 Research Hub 中完成最小可验收展示。
+
+- [ ] 用不带 DF-OPD 的 Stage-II CFM 小样本运行验证 `traj_collapse`、`flow_time` 和
+  选定层 `traj_layer_activation`；当前已验证的 r12/r13/r31 不能替代这条范围明确的基线记录
+- [ ] 在同一数据、seed、checkpoint 和 step 数下完成 diagnostics-off/on 对照，记录 step time、
+  GPU memory、吞吐和 loss；1-step smoke 不足以判断训练影响
+- [ ] 在上述非 OPD Task 中核验 ClearML Scalars、lifecycle manifest/index/linkage、checkpoint
+  layout/input snapshot 和 Research Hub 入口
+- [ ] 完成用户对 ClearML 与 Research Hub 的人工校阅，确认图表、artifact、Markdown/HTML 和媒体
+  入口可用
+- [ ] 如果“原始训练”指 Stage-I `run_stage_i_joint_4b_full.sh` 的 LM-only 路径，单独增加
+  LM-only 训练信号适配；当前 `SidewalkSftArguments` 会要求 action head 和正 action loss，不能
+  直接把现有 action diagnostics 插进去
+- [ ] 用完整或固定代表性数据集跑一次非 OPD baseline，并绑定评测 JSON、scorecard 和实验报告
+
+以下 DF-OPD 条目保留为后续专项，不作为当前非 OPD 可视化验收的依赖：
+
 - [x] UrbanNav `cached_traj_query_v2` 两行、1-step 真实训练 smoke：TensorBoard、JSONL、checkpoint 和
   `traj_collapse`/CFM flow-time/选定层 TRAJ 激活已写出；详见
   `ms-swift/docs/Experiments/urbannav_diagnostics_mini_smoke_20260825.md`
