@@ -16,9 +16,10 @@ from typing import Any, Iterator
 from urllib.parse import parse_qsl, quote, urlsplit, urlunsplit
 
 from .config import HubConfig, SourceRoot, atomic_write_text, is_within, read_source_registry, stable_id
+from .lifecycle import LifecycleStore
 
 
-CATALOG_SCHEMA = "research_review_hub_catalog_v1"
+CATALOG_SCHEMA = "research_review_hub_catalog_v2"
 TEXT_SUFFIXES = {".md", ".txt", ".log", ".yaml", ".yml"}
 MEDIA_SUFFIXES = {
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".mp4", ".webm",
@@ -107,12 +108,22 @@ def build_catalog(config: HubConfig) -> dict[str, Any]:
             documents.extend(_scan_portfolio_workstreams(config, source))
     media_root = config.state_root / "media"
     if media_root.is_dir():
-        hub_media = SourceRoot("hub_media", media_root, "hub_owned_media")
+        hub_media = SourceRoot(
+            "hub_media",
+            media_root,
+            "hub_owned_media",
+            "shared-evidence",
+            "research-review-hub",
+        )
         for path in _iter_files(media_root, config.state_root / "media" / "_never_matches"):
             artifacts.append(_describe_artifact(config, hub_media, path))
     runs = _scan_runs(config, warnings)
-    experiments = _scan_experiments(config, documents, warnings)
+    _assign_document_workstreams(config, documents, runs)
+    experiments = _scan_experiments(config, documents, runs, warnings)
+    _assign_artifact_ownership(artifacts, queues, experiments)
+    archives = LifecycleStore(config).records()
     repositories = _repository_statuses(config)
+    workstreams = _workstreams(config)
     artifacts.sort(key=lambda item: (item["relative_path"], item["id"]))
     documents.sort(key=lambda item: (item["title"].casefold(), item["path"]))
     queues.sort(key=lambda item: (item["title"].casefold(), item["id"]))
@@ -120,7 +131,14 @@ def build_catalog(config: HubConfig) -> dict[str, Any]:
         "schema_version": CATALOG_SCHEMA,
         "generated_at": _now(),
         "source_roots": [
-            {"id": source.id, "path": str(source.path), "mode": source.mode, "exists": source.path.exists()}
+            {
+                "id": source.id,
+                "path": str(source.path),
+                "mode": source.mode,
+                "project_id": source.project_id,
+                "workstream_id": source.workstream_id,
+                "exists": source.path.exists(),
+            }
             for source in config.sources
         ],
         "settings": {
@@ -129,14 +147,25 @@ def build_catalog(config: HubConfig) -> dict[str, Any]:
             "source_registry": read_source_registry(config.portfolio_root),
             "write_mode": "loopback_service_required_for_reindex",
         },
-        "summary": _summary(artifacts, documents, runs, queues, experiments),
+        "summary": _summary(artifacts, documents, runs, queues, experiments, archives),
+        "projects": _projects(
+            config,
+            artifacts,
+            documents,
+            runs,
+            queues,
+            experiments,
+            workstreams,
+            archives,
+        ),
         "repositories": repositories,
-        "workstreams": _workstreams(config),
+        "workstreams": workstreams,
         "documents": documents,
         "runs": runs,
         "experiments": experiments,
         "artifacts": artifacts,
         "queues": queues,
+        "archives": archives,
         "warnings": warnings,
     }
 
@@ -240,6 +269,8 @@ def _describe_artifact(config: HubConfig, source: SourceRoot, path: Path) -> dic
     record: dict[str, Any] = {
         "id": stable_id("artifact", relative),
         "source_id": source.id,
+        "project_id": source.project_id,
+        "workstream_id": source.workstream_id,
         "relative_path": relative,
         "path": str(path.resolve()),
         "href": quote(relative, safe="/"),
@@ -248,6 +279,10 @@ def _describe_artifact(config: HubConfig, source: SourceRoot, path: Path) -> dic
         "size_bytes": stat.st_size,
         "modified_at": datetime.fromtimestamp(stat.st_mtime, timezone.utc).isoformat(),
         "openable": kind != "restricted",
+        "writable": False,
+        "edit_mode": None,
+        "read_only_reason": "外部或历史产物内容只读；可以先归档，再单独确认永久删除。",
+        "archivable": True,
         "title": path.name,
         "metadata": {},
     }
@@ -371,6 +406,8 @@ def _queue_from_artifact(config: HubConfig, artifact: dict[str, Any]) -> dict[st
     return {
         "id": stable_id("queue", artifact["relative_path"]),
         "artifact_id": artifact["id"],
+        "project_id": artifact["project_id"],
+        "workstream_id": artifact["workstream_id"],
         "path": artifact["path"],
         "relative_path": artifact["relative_path"],
         "title": Path(artifact["relative_path"]).name,
@@ -383,7 +420,7 @@ def _queue_from_artifact(config: HubConfig, artifact: dict[str, Any]) -> dict[st
 
 
 def _scan_documents(config: HubConfig, source: SourceRoot) -> list[dict[str, Any]]:
-    """Catalog Markdown experiments while allowing edits only for canonical records."""
+    """Catalog project Markdown with strict and general editing modes."""
 
     documents: list[dict[str, Any]] = []
     for path in sorted(source.path.rglob("*.md")):
@@ -398,10 +435,13 @@ def _scan_documents(config: HubConfig, source: SourceRoot) -> list[dict[str, Any
         status_match = DOCUMENT_STATUS_RE.search(text)
         identifier_match = DOCUMENT_ID_RE.search(text)
         canonical = "experiment_record_version: 1" in text
+        writable = not path.is_symlink()
         documents.append(
             {
                 "id": stable_id("document", relative),
                 "source_id": source.id,
+                "project_id": source.project_id,
+                "workstream_id": source.workstream_id,
                 "path": str(path.resolve()),
                 "relative_path": relative,
                 "href": path.resolve().as_uri(),
@@ -409,7 +449,10 @@ def _scan_documents(config: HubConfig, source: SourceRoot) -> list[dict[str, Any
                 "experiment_id": identifier_match.group(1).strip() if identifier_match else None,
                 "status": status_match.group(1).strip() if status_match else None,
                 "canonical_experiment_record": canonical,
-                "writable": canonical,
+                "edit_mode": "canonical" if canonical else "markdown",
+                "writable": writable,
+                "read_only_reason": None if writable else "符号链接文档禁止从 Hub 写回。",
+                "archivable": writable,
                 "size_bytes": path.stat().st_size,
                 "modified_at": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat(),
             }
@@ -427,17 +470,58 @@ def _scan_portfolio_workstreams(config: HubConfig, source: SourceRoot) -> list[d
             {
                 "id": stable_id("workflow", relative),
                 "source_id": source.id,
+                "project_id": source.project_id,
+                "workstream_id": path.parent.name,
                 "path": str(path.resolve()),
                 "relative_path": relative,
                 "href": path.resolve().as_uri(),
                 "title": _html_title(path) or path.stem,
                 "canonical_experiment_record": False,
+                "edit_mode": None,
                 "writable": False,
+                "read_only_reason": "组合层治理文档只读；请通过对应 workstream 流程修改。",
+                "archivable": False,
                 "size_bytes": path.stat().st_size,
                 "modified_at": datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).isoformat(),
             }
         )
     return documents
+
+
+def _ownership_for_path(config: HubConfig, raw_path: Any) -> tuple[str, str]:
+    """Resolve project/workstream defaults from one configured source path."""
+
+    if isinstance(raw_path, str) and raw_path.strip():
+        candidate = Path(raw_path)
+        if not candidate.is_absolute():
+            candidate = config.workspace_root / candidate
+        source = config.source_for(candidate)
+        if source is not None:
+            return source.project_id, source.workstream_id
+    return "research-workflow", "portfolio-runs"
+
+
+def _assign_document_workstreams(
+    config: HubConfig,
+    documents: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+) -> None:
+    """Let an explicit run-to-record binding override source-level defaults."""
+
+    by_path = {str(Path(str(item["path"])).resolve()): item for item in documents}
+    for run in runs:
+        raw_path = run.get("experiment_record")
+        if not isinstance(raw_path, str) or not raw_path:
+            continue
+        candidate_path = Path(raw_path)
+        if not candidate_path.is_absolute():
+            candidate_path = config.workspace_root / candidate_path
+        candidate = str(candidate_path.resolve())
+        document = by_path.get(candidate)
+        if document is None:
+            continue
+        document["project_id"] = run.get("project_id") or document["project_id"]
+        document["workstream_id"] = run.get("workstream_id") or document["workstream_id"]
 
 
 def _scan_runs(config: HubConfig, warnings: list[str]) -> list[dict[str, Any]]:
@@ -450,9 +534,11 @@ def _scan_runs(config: HubConfig, warnings: list[str]) -> list[dict[str, Any]]:
         except (OSError, json.JSONDecodeError) as exc:
             warnings.append(f"run_invalid:{path}:{type(exc).__name__}")
             continue
+        project_id, default_workstream = _ownership_for_path(config, raw.get("experiment_record"))
         runs.append(
             {
                 "id": str(raw.get("run_id", path.stem)),
+                "project_id": str(raw.get("project_id") or project_id),
                 "path": str(path.resolve()),
                 "href": path.resolve().as_uri(),
                 "objective": str(raw.get("objective", "")),
@@ -460,8 +546,11 @@ def _scan_runs(config: HubConfig, warnings: list[str]) -> list[dict[str, Any]]:
                 "implementation_state": raw.get("implementation_state"),
                 "verification_level": raw.get("verification_level"),
                 "validation_scope": raw.get("validation_scope"),
-                "workstream_id": raw.get("workstream_id"),
+                "workstream_id": raw.get("workstream_id") or default_workstream,
                 "experiment_record": raw.get("experiment_record"),
+                "writable": False,
+                "read_only_reason": "Run manifest 由 receipt/治理工具维护，不在 Hub 内直接编辑。",
+                "archivable": False,
                 "artifact_count": len(raw.get("artifacts", [])),
                 "gate_count": len(raw.get("gates", [])),
             }
@@ -472,6 +561,7 @@ def _scan_runs(config: HubConfig, warnings: list[str]) -> list[dict[str, Any]]:
 def _scan_experiments(
     config: HubConfig,
     documents: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
     warnings: list[str],
 ) -> list[dict[str, Any]]:
     """Discover bounded, manifest-first experiment bundles below review outputs.
@@ -602,10 +692,10 @@ def _scan_experiments(
                     "size_bytes": item["size_bytes"],
                 })
         for directory in sorted(EXPERIMENT_ARTIFACT_DIRS):
-            artifact_root = root / directory
-            if not artifact_root.is_dir() or artifact_root.is_symlink():
+            artifact_directory = root / directory
+            if not artifact_directory.is_dir() or artifact_directory.is_symlink():
                 continue
-            for path in sorted(artifact_root.rglob("*")):
+            for path in sorted(artifact_directory.rglob("*")):
                 if (
                     not path.is_file()
                     or path.is_symlink()
@@ -631,9 +721,20 @@ def _scan_experiments(
                             "size_bytes": path.stat().st_size,
                         })
             media = selected
+        run = next((item for item in runs if item.get("id") == run_id), None)
+        project_id = _project_slug(
+            linkage.get("project_id") or linkage.get("clearml_project")
+        ) or (canonical.get("project_id") if canonical else None) or (
+            run.get("project_id") if run else None
+        ) or "shared-evidence"
+        workstream_id = (
+            canonical.get("workstream_id") if canonical else None
+        ) or (run.get("workstream_id") if run else None) or _slug(linkage.get("workstream_id")) or "research-review-hub"
         files.sort(key=lambda item: item["relative_path"])
         experiments.append({
             "id": stable_id("experiment", relative_root),
+            "project_id": project_id,
+            "workstream_id": workstream_id,
             "run_id": run_id,
             "experiment_id": experiment_id,
             "root": str(root.resolve()),
@@ -646,6 +747,9 @@ def _scan_experiments(
             "canonical_document_id": canonical.get("id") if canonical else None,
             "canonical_document_path": canonical.get("relative_path") if canonical else None,
             "report_path": str(report.resolve()) if report.is_file() else None,
+            "writable": False,
+            "read_only_reason": "实验 bundle 是聚合目录；请编辑绑定文档，或归档整个 bundle。",
+            "archivable": True,
             "files": files,
             "media": media,
             "manifest": manifest,
@@ -653,6 +757,64 @@ def _scan_experiments(
         })
     experiments.sort(key=lambda item: (str(item.get("title", "")).casefold(), item["id"]))
     return experiments
+
+
+def _assign_artifact_ownership(
+    artifacts: list[dict[str, Any]],
+    queues: list[dict[str, Any]],
+    experiments: list[dict[str, Any]],
+) -> None:
+    """Bind bundle files and their queues to the owning experiment project."""
+
+    ordered = sorted(
+        experiments,
+        key=lambda item: len(str(item.get("relative_root", ""))),
+        reverse=True,
+    )
+    for artifact in artifacts:
+        relative = str(artifact.get("relative_path", ""))
+        experiment = next(
+            (
+                item
+                for item in ordered
+                if relative == item.get("relative_root")
+                or relative.startswith(str(item.get("relative_root", "")) + "/")
+            ),
+            None,
+        )
+        if experiment is None:
+            continue
+        artifact["project_id"] = experiment["project_id"]
+        artifact["workstream_id"] = experiment["workstream_id"]
+        artifact["experiment_id"] = experiment["id"]
+    artifacts_by_id = {item["id"]: item for item in artifacts}
+    for queue in queues:
+        artifact = artifacts_by_id.get(queue.get("artifact_id"))
+        if artifact is not None:
+            queue["project_id"] = artifact["project_id"]
+            queue["workstream_id"] = artifact["workstream_id"]
+
+
+def _slug(value: Any) -> str | None:
+    """Normalize optional external ownership labels into stable UI keys."""
+
+    if not isinstance(value, str) or not value.strip():
+        return None
+    slug = re.sub(r"[^a-z0-9_-]+", "-", value.casefold()).strip("-_")
+    return slug or None
+
+
+def _project_slug(value: Any) -> str | None:
+    """Normalize external project aliases to one catalog project key."""
+
+    slug = _slug(value)
+    aliases = {
+        "sr-nav": "urbannav-sr",
+        "srnav": "urbannav-sr",
+        "urban-nav-sr": "urbannav-sr",
+        "urbannav": "urbannav-sr",
+    }
+    return aliases.get(slug, slug)
 
 
 def _small_json_object(path: Path, warnings: list[str]) -> dict[str, Any]:
@@ -758,6 +920,8 @@ def _workstreams(config: HubConfig) -> list[dict[str, Any]]:
         result.append(
             {
                 "id": fields.get("workstream-id", path.parent.name),
+                "project_id": "research-workflow",
+                "workstream_id": fields.get("workstream-id", path.parent.name),
                 "path": str(path.resolve()),
                 "href": path.resolve().as_uri(),
                 "project": fields.get("project"),
@@ -766,6 +930,9 @@ def _workstreams(config: HubConfig) -> list[dict[str, Any]]:
                 "verification_level": fields.get("verification-level"),
                 "validation_scope": fields.get("validation-scope"),
                 "next_atomic_step": fields.get("next-atomic-step"),
+                "writable": False,
+                "read_only_reason": "Workstream 状态由组合层治理流程维护。",
+                "archivable": False,
             }
         )
     return result
@@ -790,12 +957,121 @@ def _repository_statuses(config: HubConfig) -> list[dict[str, Any]]:
     return records
 
 
+def _projects(
+    config: HubConfig,
+    artifacts: list[dict[str, Any]],
+    documents: list[dict[str, Any]],
+    runs: list[dict[str, Any]],
+    queues: list[dict[str, Any]],
+    experiments: list[dict[str, Any]],
+    workstreams: list[dict[str, Any]],
+    archives: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Build project and nested workstream counts for first-class navigation."""
+
+    names: dict[str, str] = {
+        "research-workflow": "ResearchWorkflow",
+        "shared-evidence": "共享证据",
+        "unassigned": "未归属",
+    }
+    roles: dict[str, str] = {
+        "research-workflow": "portfolio_control",
+        "shared-evidence": "evidence_library",
+        "unassigned": "unassigned",
+    }
+    try:
+        repo_registry = json.loads((config.portfolio_root / "repos.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        repo_registry = {}
+    repositories = repo_registry.get("repositories", []) if isinstance(repo_registry, dict) else []
+    for repo in repositories:
+        if isinstance(repo, dict) and isinstance(repo.get("id"), str):
+            names[repo["id"]] = str(repo.get("name") or repo["id"])
+            roles[repo["id"]] = str(repo.get("role") or "repository")
+    for experiment in experiments:
+        project_id = str(experiment.get("project_id") or "unassigned")
+        if experiment.get("clearml_project"):
+            names.setdefault(project_id, str(experiment["clearml_project"]))
+
+    empty_counts = {
+        "documents": 0,
+        "writable_documents": 0,
+        "experiments": 0,
+        "artifacts": 0,
+        "runs": 0,
+        "queues": 0,
+        "archived": 0,
+    }
+    projects: dict[str, dict[str, Any]] = {}
+
+    def ensure(project_id: str, workstream_id: str) -> tuple[dict[str, Any], dict[str, Any]]:
+        project = projects.setdefault(
+            project_id,
+            {
+                "id": project_id,
+                "name": names.get(project_id, project_id),
+                "role": roles.get(project_id, "catalog_project"),
+                "counts": dict(empty_counts),
+                "workstreams": {},
+            },
+        )
+        nested = project["workstreams"].setdefault(
+            workstream_id,
+            {"id": workstream_id, "name": workstream_id, "counts": dict(empty_counts)},
+        )
+        return project, nested
+
+    for source in config.sources:
+        ensure(source.project_id, source.workstream_id)
+    collections = (
+        ("documents", documents),
+        ("experiments", experiments),
+        ("artifacts", artifacts),
+        ("runs", runs),
+        ("queues", queues),
+    )
+    for kind, records in collections:
+        for record in records:
+            project_id = str(record.get("project_id") or "unassigned")
+            workstream_id = str(record.get("workstream_id") or "unassigned")
+            project, nested = ensure(project_id, workstream_id)
+            project["counts"][kind] += 1
+            nested["counts"][kind] += 1
+            if kind == "documents" and record.get("writable"):
+                project["counts"]["writable_documents"] += 1
+                nested["counts"]["writable_documents"] += 1
+    for archive in archives:
+        if archive.get("status") != "archived":
+            continue
+        project_id = str(archive.get("project_id") or "unassigned")
+        workstream_id = str(archive.get("workstream_id") or "unassigned")
+        project, nested = ensure(project_id, workstream_id)
+        project["counts"]["archived"] += 1
+        nested["counts"]["archived"] += 1
+    for workstream in workstreams:
+        ensure(
+            str(workstream.get("project_id") or "research-workflow"),
+            str(workstream.get("workstream_id") or workstream.get("id") or "unassigned"),
+        )
+
+    result: list[dict[str, Any]] = []
+    for project in projects.values():
+        project["workstreams"] = sorted(
+            project["workstreams"].values(),
+            key=lambda item: (str(item["name"]).casefold(), item["id"]),
+        )
+        result.append(project)
+    result.sort(key=lambda item: (str(item["name"]).casefold(), item["id"]))
+    return result
+
+
 def _summary(
     artifacts: list[dict[str, Any]],
     documents: list[dict[str, Any]],
     runs: list[dict[str, Any]],
     queues: list[dict[str, Any]],
     experiments: list[dict[str, Any]],
+    archives: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Return dashboard-safe aggregate counts only."""
 
@@ -808,6 +1084,7 @@ def _summary(
         "run_count": len(runs),
         "queue_count": len(queues),
         "experiment_count": len(experiments),
+        "archived_count": sum(1 for item in archives if item.get("status") == "archived"),
         "html_count": kinds.get("html", 0),
     }
 
@@ -825,12 +1102,23 @@ def _write_sqlite(path: Path, catalog: dict[str, Any]) -> None:
                 "CREATE TABLE records (record_id TEXT PRIMARY KEY, record_type TEXT, title TEXT, body TEXT, path TEXT, payload TEXT);"
                 "CREATE VIRTUAL TABLE search_fts USING fts5(record_id UNINDEXED, record_type UNINDEXED, title, body, path UNINDEXED, payload UNINDEXED);"
             )
-            for record_type, records in (("artifact", catalog["artifacts"]), ("document", catalog["documents"]), ("run", catalog["runs"]), ("queue", catalog["queues"]), ("workstream", catalog["workstreams"])):
+            for record_type, records in (
+                ("artifact", catalog["artifacts"]),
+                ("document", catalog["documents"]),
+                ("run", catalog["runs"]),
+                ("experiment", catalog["experiments"]),
+                ("queue", catalog["queues"]),
+                ("workstream", catalog["workstreams"]),
+                ("archive", catalog["archives"]),
+            ):
                 for record in records:
-                    title = str(record.get("title") or record.get("id") or "")
+                    record_id = str(record.get("id") or record.get("archive_id") or "")
+                    if not record_id:
+                        continue
+                    title = str(record.get("title") or record_id)
                     body = " ".join(str(value) for key, value in record.items() if key not in {"path", "href", "payload"} and isinstance(value, (str, int, float)))
                     payload = json.dumps(record, ensure_ascii=False, sort_keys=True)
-                    row = (str(record["id"]), record_type, title, body, str(record.get("path", "")), payload)
+                    row = (record_id, record_type, title, body, str(record.get("path", "")), payload)
                     connection.execute("INSERT INTO records VALUES (?, ?, ?, ?, ?, ?)", row)
                     connection.execute("INSERT INTO search_fts VALUES (?, ?, ?, ?, ?, ?)", row)
             connection.commit()

@@ -17,7 +17,7 @@ python -m research_hub doctor
 预览页。静态首页会内嵌预览 HTML、图片、视频、音频和 PDF；实验 Markdown 的表格、代码块、
 相对本地媒体链接会被渲染为 HTML。
 
-要在线编辑 canonical Markdown，使用 `serve` 打印的带 token URL：
+要在线编辑项目 Markdown，使用 `serve` 打印的带 token URL：
 
 ```bash
 python -m research_hub serve --host 127.0.0.1 --port 8765
@@ -26,7 +26,14 @@ python -m research_hub serve --host 127.0.0.1 --port 8765
 live 页面会把生成的 Markdown 预览和 HTML artifact 通过 loopback API 提供给 iframe，
 所以不要把 ClearML Artifacts 面板或 `file://` 页面当作在线文件编辑器。ClearML 的
 Artifacts 用于只读保存/下载，HTML 的交互查看应放在 Debug Samples；Research Hub 才
-负责 Markdown 校验、diff、原子保存和备份。
+负责 Markdown 校验、diff、原子保存和备份。包含
+`experiment_record_version: 1` 的实验记录使用严格 canonical 校验；配置为
+`experiment_documents` 的其他 Markdown 使用通用文本校验，两种模式都会执行
+base SHA-256 冲突检查和写前备份。
+
+Catalog v2 为每个来源和记录声明 `project_id` 与 `workstream_id`。首页先按项目、再按
+workstream 分组；项目切换器、workstream 筛选和项目级计数使用同一归属合同。来源配置
+`research_hub_sources.json` 必须明确这两个字段，不能再依靠路径名称隐式猜测项目。
 
 使用 `gateway` 后，`http://127.0.0.1:8080/` 仍然打开 ClearML Web，
 `http://127.0.0.1:8080/research/` 打开同一端口下的 Research Hub。统一 gateway
@@ -55,3 +62,9 @@ SSH 隧道。
 实验 Markdown 的保存必须经过现有 `validate_experiment_record.py`、base SHA-256、diff 预览和
 原子替换。审核事件单独追加到 `_research_hub/review_events/`，并可导出派生的 review view；
 不会改写原始 annotation 或 diagnosis JSONL。
+
+文档、单个 artifact 和实验 bundle 没有直接删除入口。活动记录只能先移动到
+`_research_hub/archive/<archive_id>/payload`，归档清单保留原路径、项目、workstream、时间和
+文件摘要，可从“归档与恢复”页恢复。永久删除只允许作用于仍处于 `archived` 状态的 payload，
+并要求输入完整的 `DELETE <archive_id>`；删除后保留 tombstone manifest。组合层 workstream
+文档、run manifest 和其他治理文件保持只读且不可从 Hub 归档。

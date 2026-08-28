@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .catalog import build_catalog, load_catalog, scan_and_write, write_catalog
+from .catalog import CATALOG_SCHEMA, build_catalog, load_catalog, scan_and_write, write_catalog
 from .config import HubConfig, load_config
 from .frontend import render_index
 from .server import make_server
@@ -108,7 +108,7 @@ def _doctor(config: HubConfig) -> int:
     else:
         try:
             catalog = load_catalog(config)
-            if catalog.get("schema_version") != "research_review_hub_catalog_v1":
+            if catalog.get("schema_version") != CATALOG_SCHEMA:
                 errors.append("catalog.json has an unexpected schema version")
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             errors.append(f"catalog.json unreadable: {type(exc).__name__}")

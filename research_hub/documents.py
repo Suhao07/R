@@ -67,6 +67,10 @@ class DocumentStore:
             "id": record["id"],
             "title": record["title"],
             "relative_path": record["relative_path"],
+            "project_id": record.get("project_id"),
+            "workstream_id": record.get("workstream_id"),
+            "edit_mode": record.get("edit_mode"),
+            "read_only_reason": record.get("read_only_reason"),
             "content": content,
             "sha256": _sha256_text(content),
         }
@@ -89,7 +93,8 @@ class DocumentStore:
         current = self.get(document_id)
         if current["sha256"] != base_sha256:
             raise DocumentConflictError("document changed on disk; reload before saving")
-        errors = _validate_candidate(self.config, content)
+        record = self._record(document_id)
+        errors = _validate_candidate(self.config, content, str(record.get("edit_mode") or "markdown"))
         token = self._token(document_id, base_sha256, content)
         return {
             "ok": not errors,
@@ -123,10 +128,10 @@ class DocumentStore:
         current = self.get(document_id)
         if current["sha256"] != base_sha256:
             raise DocumentConflictError("document changed on disk; reload before saving")
-        errors = _validate_candidate(self.config, content)
+        record = self._record(document_id)
+        errors = _validate_candidate(self.config, content, str(record.get("edit_mode") or "markdown"))
         if errors:
             raise DocumentValidationError(errors)
-        record = self._record(document_id)
         path = self._safe_path(record)
         backup = self._backup(record, current["content"], base_sha256)
         _atomic_replace(path, content, path.stat().st_mode)
@@ -138,7 +143,8 @@ class DocumentStore:
         catalog = load_catalog(self.config)
         record = next((item for item in catalog["documents"] if item["id"] == document_id), None)
         if not record or not record.get("writable"):
-            raise DocumentError("document is not a writable canonical experiment record")
+            reason = record.get("read_only_reason") if record else None
+            raise DocumentError(str(reason or "document is not writable"))
         return record
 
     def _safe_path(self, record: dict[str, Any]) -> Path:
@@ -150,7 +156,7 @@ class DocumentStore:
         if not any(is_within(path, root) for root in self.config.document_roots):
             raise DocumentError("document path is outside writable roots")
         text = path.read_text(encoding="utf-8")
-        if "experiment_record_version: 1" not in text:
+        if record.get("edit_mode") == "canonical" and "experiment_record_version: 1" not in text:
             raise DocumentError("document no longer declares experiment_record_version: 1")
         return path.resolve()
 
@@ -188,11 +194,17 @@ class DocumentStore:
         return directory
 
 
-def _validate_candidate(config: HubConfig, content: str) -> list[str]:
-    """Run the existing validator on temporary candidate bytes, never source files."""
+def _validate_candidate(config: HubConfig, content: str, edit_mode: str) -> list[str]:
+    """Validate strict experiment records or general project Markdown."""
 
     if not isinstance(content, str) or len(content.encode("utf-8")) > 5 * 1024 * 1024:
         return ["candidate Markdown must be UTF-8 text no larger than 5 MiB"]
+    if "\x00" in content:
+        return ["candidate Markdown must not contain NUL bytes"]
+    if edit_mode == "markdown":
+        return []
+    if edit_mode != "canonical":
+        return [f"unsupported document edit mode: {edit_mode}"]
     scripts_root = str(config.portfolio_root)
     import sys
 

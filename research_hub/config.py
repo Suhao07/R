@@ -13,7 +13,7 @@ from typing import Any, Iterable
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 DEFAULT_PORTFOLIO_ROOT = PACKAGE_ROOT.parent
-SOURCE_REGISTRY_SCHEMA = "research_hub_source_registry_v1"
+SOURCE_REGISTRY_SCHEMA = "research_hub_source_registry_v2"
 SOURCE_MODES = {"read_only_artifacts", "experiment_documents", "portfolio_evidence"}
 
 
@@ -25,11 +25,15 @@ class SourceRoot:
         id: Stable identifier used by catalog records.
         path: Resolved local filesystem root.
         mode: Source ownership and mutability category.
+        project_id: Project grouping key shown in the Hub.
+        workstream_id: Default workstream grouping key for records in the root.
     """
 
     id: str
     path: Path
     mode: str
+    project_id: str = "unassigned"
+    workstream_id: str = "unassigned"
 
 
 @dataclass(frozen=True)
@@ -196,6 +200,7 @@ def validate_source_registry(portfolio_root: Path, raw: Any) -> dict[str, Any]:
         if not isinstance(item, dict):
             raise ValueError("each scan_roots entry must be an object")
         source_id, path_value, mode = item.get("id"), item.get("path"), item.get("mode")
+        project_id, workstream_id = item.get("project_id"), item.get("workstream_id")
         if not isinstance(source_id, str) or not source_id or not source_id.replace("_", "").isalnum():
             raise ValueError("scan root id must use letters, digits, or underscores")
         if source_id in seen_ids:
@@ -204,6 +209,9 @@ def validate_source_registry(portfolio_root: Path, raw: Any) -> dict[str, Any]:
             raise ValueError(f"scan root {source_id} needs a path")
         if mode not in SOURCE_MODES:
             raise ValueError(f"scan root {source_id} has unsupported mode: {mode}")
+        for field, value in (("project_id", project_id), ("workstream_id", workstream_id)):
+            if not isinstance(value, str) or not value or not value.replace("-", "").replace("_", "").isalnum():
+                raise ValueError(f"scan root {source_id} needs a slug-like {field}")
         resolved = _resolve_registry_path(root, path_value)
         if not is_within(resolved, workspace):
             raise ValueError(f"scan root {source_id} must stay inside the local Code workspace")
@@ -212,7 +220,15 @@ def validate_source_registry(portfolio_root: Path, raw: Any) -> dict[str, Any]:
             if resolved != artifact_root:
                 raise ValueError("the read_only_artifacts path must equal artifact_root")
         seen_ids.add(source_id)
-        normalized_sources.append({"id": source_id, "path": path_value, "mode": mode})
+        normalized_sources.append(
+            {
+                "id": source_id,
+                "path": path_value,
+                "mode": mode,
+                "project_id": project_id,
+                "workstream_id": workstream_id,
+            }
+        )
     if artifact_sources != 1:
         raise ValueError("exactly one read_only_artifacts root is required")
     raw_limits = raw.get("limits")
@@ -253,6 +269,8 @@ def _config_from_registry(root: Path, raw: dict[str, Any]) -> HubConfig:
             id=str(item["id"]),
             path=_resolve_registry_path(root, item["path"]),
             mode=str(item["mode"]),
+            project_id=str(item["project_id"]),
+            workstream_id=str(item["workstream_id"]),
         )
         for item in raw.get("scan_roots", [])
     )

@@ -1,27 +1,35 @@
 {
-  "schema_version": "research_hub_source_registry_v1",
+  "schema_version": "research_hub_source_registry_v2",
   "artifact_root": "../review_outputs",
   "hub_state_relative": "_research_hub",
   "scan_roots": [
     {
       "id": "review_outputs",
       "path": "../review_outputs",
-      "mode": "read_only_artifacts"
+      "mode": "read_only_artifacts",
+      "project_id": "shared-evidence",
+      "workstream_id": "research-review-hub"
     },
     {
       "id": "ms_swift_experiments",
       "path": "../ms-swift/docs/Experiments",
-      "mode": "experiment_documents"
+      "mode": "experiment_documents",
+      "project_id": "ms-swift",
+      "workstream_id": "core-framework"
     },
     {
       "id": "urbannav_routeserver_docs",
       "path": "../Urban-Nav-SR/Agent_part/RouteServer/docs",
-      "mode": "experiment_documents"
+      "mode": "experiment_documents",
+      "project_id": "urbannav-sr",
+      "workstream_id": "core-framework"
     },
     {
       "id": "portfolio_evidence",
       "path": ".",
-      "mode": "portfolio_evidence"
+      "mode": "portfolio_evidence",
+      "project_id": "research-workflow",
+      "workstream_id": "research-review-hub"
     }
   ],
   "limits": {

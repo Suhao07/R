@@ -24,6 +24,7 @@ from .frontend import render_index
 from .experiment_frontend import render_experiment_page
 from .reviews import ReviewError, ReviewStore
 from .rendering import render_document_pages
+from .lifecycle import LifecycleError, LifecycleStore
 
 
 LOOPBACK_HOSTS = {"127.0.0.1", "::1", "localhost"}
@@ -46,6 +47,7 @@ class HubServerContext:
     def __post_init__(self) -> None:
         self.documents = DocumentStore(self.config, self.token.encode("utf-8"))
         self.reviews = ReviewStore(self.config)
+        self.lifecycle = LifecycleStore(self.config)
 
     def replace_config(self, config: HubConfig) -> None:
         """Activate a validated source registry without restarting the server."""
@@ -53,6 +55,7 @@ class HubServerContext:
         self.config = config
         self.documents = DocumentStore(config, self.token.encode("utf-8"))
         self.reviews = ReviewStore(config)
+        self.lifecycle = LifecycleStore(config)
 
 
 class HubRequestHandler(BaseHTTPRequestHandler):
@@ -78,6 +81,9 @@ class HubRequestHandler(BaseHTTPRequestHandler):
                 return
             if route == "/api/settings":
                 self._json(_settings_payload(self.context.config))
+                return
+            if route == "/api/lifecycle":
+                self._json({"records": self.context.lifecycle.records()})
                 return
             if route == "/api/search":
                 query = parse_qs(parsed.query).get("q", [""])[0]
@@ -173,10 +179,24 @@ class HubRequestHandler(BaseHTTPRequestHandler):
                 value = self._read_json()
                 self._json(self.context.reviews.export(str(value.get("queue_id", ""))))
                 return
+            if route == "/api/lifecycle/archive":
+                value = self._read_json()
+                result = self.context.lifecycle.archive(
+                    str(value.get("record_type", "")),
+                    str(value.get("id", "")),
+                    load_catalog(self.context.config),
+                )
+                catalog = self._rebuild_catalog()
+                self._json({"record": result, "summary": catalog["summary"]})
+                return
+            if route == "/api/lifecycle/restore":
+                value = self._read_json()
+                result = self.context.lifecycle.restore(str(value.get("archive_id", "")))
+                catalog = self._rebuild_catalog()
+                self._json({"record": result, "summary": catalog["summary"]})
+                return
             if route == "/api/reindex":
-                catalog = scan_and_write(self.context.config)
-                render_document_pages(self.context.config, catalog)
-                write_catalog(self.context.config, catalog)
+                catalog = self._rebuild_catalog()
                 self._json({"summary": catalog["summary"], "generated_at": catalog["generated_at"]})
                 return
             if route == "/api/attachments":
@@ -191,7 +211,7 @@ class HubRequestHandler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.CONFLICT, str(exc))
         except DocumentValidationError as exc:
             self._json({"error": "document validation failed", "validation_errors": exc.errors}, HTTPStatus.UNPROCESSABLE_ENTITY)
-        except (DocumentError, ReviewError, ValueError) as exc:
+        except (DocumentError, LifecycleError, ReviewError, ValueError) as exc:
             self._error(HTTPStatus.UNPROCESSABLE_ENTITY, str(exc))
         except PermissionError as exc:
             self._error(HTTPStatus.FORBIDDEN, str(exc))
@@ -238,6 +258,41 @@ class HubRequestHandler(BaseHTTPRequestHandler):
             self._error(HTTPStatus.FORBIDDEN, str(exc))
         except Exception as exc:
             self._error(HTTPStatus.INTERNAL_SERVER_ERROR, f"internal error: {type(exc).__name__}")
+
+    def do_DELETE(self) -> None:  # noqa: N802
+        """Permanently delete only an archived payload after exact confirmation."""
+
+        parsed = urlparse(self.path)
+        route = self._route_path(parsed.path)
+        try:
+            self._authorize_write()
+            prefix = "/api/lifecycle/"
+            if not route.startswith(prefix):
+                self._error(HTTPStatus.NOT_FOUND, "not found")
+                return
+            archive_id = unquote(route[len(prefix):])
+            value = self._read_json()
+            result = self.context.lifecycle.permanently_delete(
+                archive_id,
+                str(value.get("confirmation", "")),
+            )
+            catalog = self._rebuild_catalog()
+            self._json({"record": result, "summary": catalog["summary"]})
+        except LifecycleError as exc:
+            self._error(HTTPStatus.UNPROCESSABLE_ENTITY, str(exc))
+        except (PermissionError, ValueError) as exc:
+            status = HTTPStatus.FORBIDDEN if isinstance(exc, PermissionError) else HTTPStatus.UNPROCESSABLE_ENTITY
+            self._error(status, str(exc))
+        except Exception as exc:
+            self._error(HTTPStatus.INTERNAL_SERVER_ERROR, f"internal error: {type(exc).__name__}")
+
+    def _rebuild_catalog(self) -> dict[str, Any]:
+        """Reindex active and archived state, then refresh rendered Markdown."""
+
+        catalog = scan_and_write(self.context.config)
+        render_document_pages(self.context.config, catalog)
+        write_catalog(self.context.config, catalog)
+        return catalog
 
     def _authorize_write(self) -> None:
         """Require same-loopback client, trusted origin, and session-bound token."""

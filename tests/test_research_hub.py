@@ -21,6 +21,7 @@ from research_hub.config import load_config, read_source_registry, sha256_file, 
 from research_hub.documents import DocumentConflictError, DocumentError, DocumentStore
 from research_hub.experiment_frontend import render_experiment_page
 from research_hub.frontend import render_index
+from research_hub.lifecycle import LifecycleError, LifecycleStore
 from research_hub.rendering import render_document_pages
 from research_hub.reviews import ReviewStore
 from research_hub.server import make_server
@@ -104,14 +105,38 @@ def hub_config(tmp_path: Path):
     (portfolio / "research_hub_sources.json").write_text(
         json.dumps(
             {
-                "schema_version": "research_hub_source_registry_v1",
+                "schema_version": "research_hub_source_registry_v2",
                 "artifact_root": "../review_outputs",
                 "hub_state_relative": "_research_hub",
                 "scan_roots": [
-                    {"id": "review_outputs", "path": "../review_outputs", "mode": "read_only_artifacts"},
-                    {"id": "ms_swift_experiments", "path": "../ms-swift/docs/Experiments", "mode": "experiment_documents"},
-                    {"id": "urbannav_routeserver_docs", "path": "../Urban-Nav-SR/Agent_part/RouteServer/docs", "mode": "experiment_documents"},
-                    {"id": "portfolio_evidence", "path": ".", "mode": "portfolio_evidence"},
+                    {
+                        "id": "review_outputs",
+                        "path": "../review_outputs",
+                        "mode": "read_only_artifacts",
+                        "project_id": "shared-evidence",
+                        "workstream_id": "research-review-hub",
+                    },
+                    {
+                        "id": "ms_swift_experiments",
+                        "path": "../ms-swift/docs/Experiments",
+                        "mode": "experiment_documents",
+                        "project_id": "ms-swift",
+                        "workstream_id": "core-framework",
+                    },
+                    {
+                        "id": "urbannav_routeserver_docs",
+                        "path": "../Urban-Nav-SR/Agent_part/RouteServer/docs",
+                        "mode": "experiment_documents",
+                        "project_id": "urbannav-sr",
+                        "workstream_id": "core-framework",
+                    },
+                    {
+                        "id": "portfolio_evidence",
+                        "path": ".",
+                        "mode": "portfolio_evidence",
+                        "project_id": "research-workflow",
+                        "workstream_id": "research-review-hub",
+                    },
                 ],
                 "limits": {"json_parse_bytes": 2097152, "jsonl_summary_bytes": 5242880, "queue_read_bytes": 16777216, "attachment_upload_bytes": 1048576},
             },
@@ -208,9 +233,18 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     (root / "attention_maps").mkdir()
     (root / "attention_maps" / "decoder_step_0001.npz").write_bytes(b"npz")
     (root / "images" / "case.jpg").write_bytes(b"jpg")
+    second = hub_config.artifact_root / "bundle-2"
+    second.mkdir()
+    (second / "report.md").write_text("# Second bundle\n", encoding="utf-8")
+    (second / "clearml_task_linkage.json").write_text(
+        json.dumps({"run_id": "bundle-run-2", "clearml_project": "FWTW"}),
+        encoding="utf-8",
+    )
     canonical = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "bundle.md"
     canonical.write_text(_valid_record().replace("test-experiment", "bundle-experiment-1"), encoding="utf-8")
     catalog = scan_and_write(hub_config)
+    assert len(catalog["experiments"]) == 2
+    assert next(item for item in catalog["experiments"] if item["run_id"] == "bundle-run-2")["project_id"] == "fwtw"
     experiment = next(item for item in catalog["experiments"] if item["run_id"] == "bundle-run-1")
     assert experiment["canonical_document_id"]
     assert experiment["media"][0]["relative_path"] == "images/case.jpg"
@@ -242,6 +276,72 @@ def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> No
     with pytest.raises(ValueError, match="Code workspace"):
         write_source_registry(hub_config.portfolio_root, escaped)
     assert read_source_registry(hub_config.portfolio_root) == before
+
+
+def test_catalog_groups_projects_and_allows_general_markdown(hub_config) -> None:
+    """Project sources should stay grouped and expose an explicit Markdown mode."""
+
+    canonical = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "canonical.md"
+    canonical.write_text(_valid_record(), encoding="utf-8")
+    general = (
+        hub_config.workspace_root
+        / "Urban-Nav-SR"
+        / "Agent_part"
+        / "RouteServer"
+        / "docs"
+        / "guide.md"
+    )
+    general.write_text("# RouteServer guide\n\nOriginal text.\n", encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    assert catalog["schema_version"] == "research_review_hub_catalog_v2"
+    project_by_id = {item["id"]: item for item in catalog["projects"]}
+    assert project_by_id["ms-swift"]["counts"]["writable_documents"] == 1
+    assert project_by_id["urbannav-sr"]["counts"]["writable_documents"] == 1
+    document = next(item for item in catalog["documents"] if item["path"] == str(general.resolve()))
+    assert document["edit_mode"] == "markdown"
+    assert document["writable"] is True
+    assert document["project_id"] == "urbannav-sr"
+    store = DocumentStore(hub_config, b"general-markdown-session")
+    current = store.get(document["id"])
+    changed = current["content"].replace("Original text.", "Reviewed text.")
+    preview = store.preview(document["id"], current["sha256"], changed)
+    assert preview["ok"] is True
+    store.save(document["id"], current["sha256"], changed, preview["preview_token"])
+    assert "Reviewed text." in general.read_text(encoding="utf-8")
+
+
+def test_recoverable_archive_restore_and_guarded_delete(hub_config) -> None:
+    """Active files must archive first, restore cleanly, and require exact deletion text."""
+
+    source = hub_config.artifact_root / "obsolete.txt"
+    source.write_text("recoverable evidence\n", encoding="utf-8")
+    catalog = scan_and_write(hub_config)
+    artifact = next(item for item in catalog["artifacts"] if item["relative_path"] == "obsolete.txt")
+    store = LifecycleStore(hub_config)
+    archived = store.archive("artifact", artifact["id"], catalog)
+    assert archived["status"] == "archived"
+    assert not source.exists()
+    refreshed = scan_and_write(hub_config)
+    assert refreshed["summary"]["archived_count"] == 1
+    assert all(item["relative_path"] != "obsolete.txt" for item in refreshed["artifacts"])
+    restored = store.restore(archived["archive_id"])
+    assert restored["status"] == "restored"
+    assert source.read_text(encoding="utf-8") == "recoverable evidence\n"
+
+    catalog = scan_and_write(hub_config)
+    artifact = next(item for item in catalog["artifacts"] if item["relative_path"] == "obsolete.txt")
+    archived = store.archive("artifact", artifact["id"], catalog)
+    with pytest.raises(LifecycleError, match="exact confirmation"):
+        store.permanently_delete(archived["archive_id"], "DELETE")
+    deleted = store.permanently_delete(
+        archived["archive_id"],
+        f"DELETE {archived['archive_id']}",
+    )
+    assert deleted["status"] == "deleted"
+    assert not source.exists()
+    assert next(
+        item for item in store.records() if item["archive_id"] == archived["archive_id"]
+    )["status"] == "deleted"
 
 
 def test_document_preview_conflict_and_atomic_save(hub_config) -> None:
