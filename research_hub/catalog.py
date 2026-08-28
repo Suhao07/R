@@ -26,6 +26,8 @@ MEDIA_SUFFIXES = {
 }
 EXPERIMENT_MEDIA_DIRS = {"charts", "images", "videos", "media"}
 EXPERIMENT_MEDIA_SUFFIXES = MEDIA_SUFFIXES | {".html", ".json", ".csv", ".md"}
+EXPERIMENT_ARTIFACT_DIRS = {"attention_maps", "paired_traces"}
+EXPERIMENT_ARTIFACT_SUFFIXES = {".npz", ".json", ".jsonl"}
 RESTRICTED_SUFFIXES = {".safetensors", ".pt", ".pth", ".ckpt", ".bin", ".tar", ".gz", ".zip"}
 DOCUMENT_STATUS_RE = re.compile(r"^\|\s*状态\s*\|\s*([^|]+?)\s*\|\s*$", re.MULTILINE)
 DOCUMENT_ID_RE = re.compile(r"^\|\s*实验 ID\s*\|\s*`?([^`|]+?)`?\s*\|\s*$", re.MULTILINE)
@@ -569,6 +571,10 @@ def _scan_experiments(
             "visualization_index.json", "canonical_experiment_record.md",
             "clearml_archive_record.json",
             "clearml_task_linkage.json", "clearml_evidence_binding.json",
+            "attention_review_manifest.json", "diagnostics_manifest.json",
+            "goal_sweep.json", "goal_sweep.predictions.npz",
+            "temporal_intervention.json", "temporal_intervention.predictions.npz",
+            "representation_report.json",
         }
         for path in sorted(root.iterdir()):
             if path.is_file() and (
@@ -595,6 +601,18 @@ def _scan_experiments(
                     "extension": item["extension"],
                     "size_bytes": item["size_bytes"],
                 })
+        for directory in sorted(EXPERIMENT_ARTIFACT_DIRS):
+            artifact_root = root / directory
+            if not artifact_root.is_dir() or artifact_root.is_symlink():
+                continue
+            for path in sorted(artifact_root.rglob("*")):
+                if (
+                    not path.is_file()
+                    or path.is_symlink()
+                    or path.suffix.lower() not in EXPERIMENT_ARTIFACT_SUFFIXES
+                ):
+                    continue
+                files.append(_experiment_file(path, root, relative_root))
         manifest_media = _manifest_section_media(root, manifest)
         if manifest_media:
             selected: list[dict[str, Any]] = []

@@ -38,6 +38,9 @@ Artifacts 用于只读保存/下载，HTML 的交互查看应放在 Debug Sample
 `/research/experiments/<run_id>` 是一个实验的完整校阅工作台，聚合 canonical
 Markdown、完整 `report.html`、scorecard、章节图片/视频/HTML 和 ClearML Task。
 媒体通过带 HTTP Range 的 `/research/api/experiments/<id>/files/...` 提供，视频可拖动。
+实验媒体按 report manifest 的章节分组显示；attention/paired-trace 采用统一宽度的
+响应式网格、章节筛选和文件名搜索，点击图片可放大查看。JSON/NPZ 保持在“证据文件”
+中作为下载型 Artifact，不会被当作图片媒体渲染。
 
 在 Chrome/Edge 中，静态页面的 canonical 实验记录可点击“选择工作区目录”，选择包含
 `ResearchWorkflow` 与 `review_outputs` 的 `Code` 目录后写回。该路径先备份到

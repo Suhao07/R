@@ -199,6 +199,14 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
         json.dumps({"sections": {"成功案例": [{"title": "case", "path": "images/case.jpg"}]}}),
         encoding="utf-8",
     )
+    for name in (
+        "attention_review_manifest.json",
+        "goal_sweep.json",
+        "goal_sweep.predictions.npz",
+    ):
+        (root / name).write_bytes(b"{}" if name.endswith(".json") else b"npz")
+    (root / "attention_maps").mkdir()
+    (root / "attention_maps" / "decoder_step_0001.npz").write_bytes(b"npz")
     (root / "images" / "case.jpg").write_bytes(b"jpg")
     canonical = hub_config.workspace_root / "ms-swift" / "docs" / "Experiments" / "bundle.md"
     canonical.write_text(_valid_record().replace("test-experiment", "bundle-experiment-1"), encoding="utf-8")
@@ -208,6 +216,9 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert experiment["media"][0]["relative_path"] == "images/case.jpg"
     assert any(item["relative_path"] == "report.html" for item in experiment["files"])
     assert any(item["task_id"] == "fedcba9876543210fedcba9876543210" for item in experiment["task_links"])
+    assert any(item["relative_path"] == "attention_review_manifest.json" for item in experiment["files"])
+    assert any(item["relative_path"] == "goal_sweep.predictions.npz" for item in experiment["files"])
+    assert any(item["relative_path"] == "attention_maps/decoder_step_0001.npz" for item in experiment["files"])
     page = render_experiment_page(experiment, base_path="/research")
     assert "完整 HTML 校阅报告" in page
     assert '"/research"' in page
@@ -216,6 +227,9 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert 'id="sectionNav"' in page
     assert 'id="mediaLightbox"' in page
     assert 'research-hub-limo-theme' in page
+    assert 'id="mediaSectionFilter"' in page
+    assert 'media-section--attention' in page
+    assert 'media-card--attention' in page
 
 
 def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> None:
