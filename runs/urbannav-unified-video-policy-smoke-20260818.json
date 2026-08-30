@@ -1,0 +1,96 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "urbannav-unified-video-policy-smoke-20260818",
+  "workstream_id": "core-framework",
+  "objective": "Verify the unified Stage I/Stage II rolling-window video inference path on real Foxglove and SideWalk clips.",
+  "status": "passed",
+  "implementation_state": "implemented",
+  "verification_level": "smoke_passed",
+  "validation_scope": "review_subset",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/smoke_and_diagnostics/urbannav_unified_video_policy_smoke_20260818.md",
+  "repository_ids": ["urbannav-sr", "ms-swift"],
+  "repositories": [
+    {
+      "id": "ms-swift",
+      "role": "primary",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift",
+      "dirty_state": "dirty: unrelated experiment document and uncommitted Transformers compatibility fallback"
+    },
+    {
+      "id": "urbannav-sr",
+      "role": "primary",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR",
+      "dirty_state": "not modified for this smoke"
+    }
+  ],
+  "dataset": {
+    "description": "Two Foxglove and one SideWalk FPV clips, trimmed to 4 seconds and sampled at 5Hz",
+    "physical_rows": 3,
+    "request_rows": 52,
+    "fingerprint": "see review_outputs/urbannav_video_smoke_20260818/visualization_manifest.json"
+  },
+  "model": {
+    "stage_i": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/checkpoints/merged_stage_i_checkpoint_256parent_v1_rebuilt_t58",
+    "stage_ii": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/benchmark_runs/stage_ii_cfm_v4_direct_latent_4b_51224_20260810/runs/qwen35_4b_full_direct_latent_v1_logits1_bs16_ga2/training/train/checkpoint-603"
+  },
+  "commands": [
+    {
+      "id": "remote_video_smoke",
+      "cwd": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation",
+      "command": "python -m swift.sidewalk_nav.cli.infer_policy --config video_smoke_20260818/final/*.yaml"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/smoke_and_diagnostics/urbannav_unified_video_policy_smoke_20260818.md",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "visualization_manifest",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/review_outputs/urbannav_video_smoke_20260818/visualization_manifest.json",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "review_html",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/review_outputs/urbannav_video_smoke_20260818/urbannav_video_smoke_review.html",
+      "required": true,
+      "exists": true
+    },
+    {
+      "id": "remote_prediction_root",
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/video_smoke_20260818/final",
+      "required": false,
+      "exists": false,
+      "note": "Private server path; verified remotely, not copied into the ResearchWorkflow repository."
+    }
+  ],
+  "gates": [
+    {
+      "id": "stage_i_stage_ii_output_coverage",
+      "required": true,
+      "passed": true,
+      "evidence": "Foxglove 18/18 and 18/18; second Foxglove 18/18 and 18/18; SideWalk 16/16 and 16/16."
+    },
+    {
+      "id": "local_review_bundle",
+      "required": true,
+      "passed": true,
+      "evidence": "Self-contained HTML contains three local videos and three Stage II trajectory SVG views."
+    },
+    {
+      "id": "benchmark_quality",
+      "required": false,
+      "passed": false,
+      "evidence": "Not evaluated: this run has no frozen GT/BEV scorecard."
+    }
+  ],
+  "known_limitations": [
+    "This is a 4-second 5Hz review smoke, not a full-video throughput run or frozen benchmark.",
+    "The review has no ground-truth trajectory, so predicted paths are qualitative only.",
+    "The path is rolling-window multi-frame inference, not a native video encoder.",
+    "The repository has an uncommitted compatibility fallback that was included in the server sync; user-controlled commit remains separate."
+  ]
+}

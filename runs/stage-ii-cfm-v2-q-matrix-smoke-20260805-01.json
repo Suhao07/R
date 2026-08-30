@@ -7,7 +7,7 @@
   "implementation_state": "implemented",
   "verification_level": "unit_passed",
   "validation_scope": "mini_sample",
-  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/smoke_and_diagnostics/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
   "repository_ids": [
     "urbannav-sr",
     "ms-swift"
@@ -22,7 +22,7 @@
   "artifacts": [
     {
       "id": "experiment_record",
-      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/archive/smoke_and_diagnostics/stage_ii_cfm_v2_reasoning_dropout_q_matrix_smoke_20260805.md",
       "required": true,
       "exists": true
     },
