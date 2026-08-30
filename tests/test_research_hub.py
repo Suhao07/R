@@ -184,6 +184,12 @@ def test_scan_catalog_and_static_index(hub_config) -> None:
     assert 'id="homeSidebar"' in static
     assert 'data-home-tab="experiments"' in static
     assert 'research-hub-home-theme' in static
+    assert '项目 → workstream → 实验' in static
+    assert 'overviewDocumentPreview' in static
+    assert '渲染 Markdown / LaTeX' in static
+    assert '未绑定项目的产物' in static
+    assert '未绑定项目的审核队列' in static
+    assert '状态未记录' in static
 
 
 def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_config) -> None:
@@ -236,6 +242,10 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     second = hub_config.artifact_root / "bundle-2"
     second.mkdir()
     (second / "report.md").write_text("# Second bundle\n", encoding="utf-8")
+    (second / "canonical_experiment_record.md").write_text(
+        "# Bundle-only experiment record\n",
+        encoding="utf-8",
+    )
     (second / "clearml_task_linkage.json").write_text(
         json.dumps({"run_id": "bundle-run-2", "clearml_project": "FWTW"}),
         encoding="utf-8",
@@ -253,6 +263,12 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert any(item["relative_path"] == "attention_review_manifest.json" for item in experiment["files"])
     assert any(item["relative_path"] == "goal_sweep.predictions.npz" for item in experiment["files"])
     assert any(item["relative_path"] == "attention_maps/decoder_step_0001.npz" for item in experiment["files"])
+    static = render_index(catalog, live=False)
+    assert "const staticExperimentHref=item=>" in static
+    assert "#experiment-" not in static
+    assert "function renderProjectHierarchy()" in static
+    assert "function experimentRecord(item)" in static
+    assert "打开完整校阅" in static
     page = render_experiment_page(experiment, base_path="/research")
     assert "完整 HTML 校阅报告" in page
     assert '"/research"' in page
@@ -264,6 +280,13 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert 'id="mediaSectionFilter"' in page
     assert 'media-section--attention' in page
     assert 'media-card--attention' in page
+    bundle_only = next(item for item in catalog["experiments"] if item["run_id"] == "bundle-run-2")
+    bundle_only_page = render_experiment_page(bundle_only, base_path="/research")
+    assert bundle_only["canonical_document_id"] is None
+    assert "canonical_experiment_record.md" in bundle_only_page
+    assert "bundle 内含只读实验文档" in bundle_only_page
+    assert "已从实验 bundle 加载只读实验文档" in bundle_only_page
+    assert "$('editor').value=await response.text()" in bundle_only_page
 
 
 def test_source_registry_rejects_escape_and_preserves_previous(hub_config) -> None:
