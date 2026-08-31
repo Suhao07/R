@@ -1,39 +1,31 @@
 {
   "schema_version": "research_portfolio_repo_snapshot_v1",
-  "generated_at": "2026-08-04T10:50:43.219607+00:00",
+  "generated_at": "2026-08-31T11:07:21.334421+00:00",
   "matrix": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/repos.json",
   "workspace_root": "/home/ubuntu/WorkSpace/project/SR/Code",
   "portfolio": {
     "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow",
     "git_repository": true,
     "branch": "main",
-    "commit": null,
-    "describe": "",
+    "commit": "ae27be5190372bcb76c44b2cdffee06a4ff3bed4",
+    "describe": "ae27be5-dirty",
     "dirty": true,
-    "dirty_path_count": 18,
+    "dirty_path_count": 5,
     "dirty_paths": [
-      "?? .gitignore",
-      "?? AGENTS.md",
-      "?? README.md",
-      "?? USER.html",
-      "?? claims/",
-      "?? evidence/",
-      "?? integrations/",
-      "?? policies/",
-      "?? releases/",
-      "?? repos.json",
-      "?? runs/",
-      "?? schemas/",
-      "?? scripts/",
-      "?? snapshots/",
-      "?? templates/",
-      "?? workspace/",
-      "?? workstreams.json",
-      "?? workstreams/"
+      "M snapshots/repo_snapshot_current.json",
+      "?? evidence/cosmos3-v1-release-audit-20260831.json",
+      "?? evidence/stage_ii_v4_direct_latent_visual_archive_20260818/",
+      "?? evidence/stage_ii_vision_only_visual_archive_20260818/",
+      "?? releases/vla-cosmos3-release-20260831.json"
     ],
     "dirty_paths_truncated": false,
-    "status_branch": "## No commits yet on main",
-    "remotes": {}
+    "status_branch": "## main...origin/main",
+    "remotes": {
+      "origin": {
+        "fetch": "https://github.com/Suhao07/R.git",
+        "push": "https://github.com/Suhao07/R.git"
+      }
+    }
   },
   "repositories": [
     {
@@ -49,18 +41,13 @@
       "agent_instructions_exist": true,
       "git_repository": true,
       "branch": "main",
-      "commit": "bd9880bfa6cd66ff4c9e4b2b31586310d025160d",
-      "describe": "bd9880b-dirty",
-      "dirty": true,
-      "dirty_path_count": 4,
-      "dirty_paths": [
-        "M .gitignore",
-        " M Agent_part/RouteServer/docs/DATASET_ANNOTATION_STATUS.md",
-        "?? Agent_part/RouteServer/docs/URBANNAV_DATA_QUALITY_AND_COLLECTION_REQUIREMENTS.md",
-        "?? Agent_part/RouteServer/tools/model_service_handoff/"
-      ],
+      "commit": "7f99921b0bab3f6a1805c4a321aa5876dc1cedd0",
+      "describe": "7f99921",
+      "dirty": false,
+      "dirty_path_count": 0,
+      "dirty_paths": [],
       "dirty_paths_truncated": false,
-      "status_branch": "## main...origin/main [behind 1]",
+      "status_branch": "## main...origin/main",
       "remotes": {
         "agent-part": {
           "fetch": "https://github.com/Suhao07/OpenStreetMcp.git",
@@ -84,17 +71,19 @@
       "agent_instructions": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/AGENTS.md",
       "agent_instructions_exist": true,
       "git_repository": true,
-      "branch": "feat/CFMandMuliFrame",
-      "commit": "12ac13bddd70e88e6f7e51466ed958da247fba45",
-      "describe": "12ac13bdd-dirty",
+      "branch": "main",
+      "commit": "0dcac2449d7c56739e0eaa840be1b49b18fb3cb1",
+      "describe": "0dcac2449-dirty",
       "dirty": true,
-      "dirty_path_count": 2,
+      "dirty_path_count": 4,
       "dirty_paths": [
-        "M docs/Experiments/stage_ii_cfm_4b_full_59k_20260802.md",
-        "?? docs/Experiments/tensorboard.md"
+        "M examples/sidewalk_nav/cosmos3/run_stage_ii_cursor_resume.sh",
+        " M swift/sidewalk_nav/cosmos3/experiments.py",
+        "?? docs/Experiments/vla-cosmos3-convergence-r3-20260830.md",
+        "?? docs/Experiments/vla-cosmos3-pilot-20260828.md"
       ],
       "dirty_paths_truncated": false,
-      "status_branch": "## feat/CFMandMuliFrame...origin/feat/CFMandMuliFrame",
+      "status_branch": "## main...origin/main",
       "remotes": {
         "origin": {
           "fetch": "git@github.com:Suhao07/UrbanNav.git",
@@ -119,16 +108,15 @@
       "agent_instructions_exist": true,
       "git_repository": true,
       "branch": "main",
-      "commit": "1ca8d53c8f003720e4ccb5595b79758cc033d942",
-      "describe": "1ca8d53",
+      "commit": "172460d90b79f07fbf1716322626e25b30c37888",
+      "describe": "172460d",
       "dirty": true,
-      "dirty_path_count": 2,
+      "dirty_path_count": 1,
       "dirty_paths": [
-        "?? AGENTS.md",
-        "?? workflow/"
+        "?? workflow/scripts/__pycache__/"
       ],
       "dirty_paths_truncated": false,
-      "status_branch": "## main...origin/main",
+      "status_branch": "## main...origin/main [ahead 2]",
       "remotes": {
         "origin": {
           "fetch": "git@github.com:Suhao07/SideWalkNavigation.git",
@@ -383,7 +371,7 @@
         "?? docs/"
       ],
       "dirty_paths_truncated": false,
-      "status_branch": "## main...origin/main",
+      "status_branch": "## main...origin/main [behind 1]",
       "remotes": {
         "origin": {
           "fetch": "https://github.com/amap-cvlab/OmniNav.git",

@@ -1,0 +1,135 @@
+{
+  "schema_version": "research_portfolio_release_v1",
+  "release_id": "vla-cosmos3-release-20260831",
+  "status": "blocked",
+  "created_at": "2026-08-31",
+  "run_ids": [],
+  "external_run_ids": [
+    "vla-stage-ii-final-quality-20260831",
+    "VLA-stage-i-target-free-20260830",
+    "VLA-convergence-r3-20260830"
+  ],
+  "repository_ids": [
+    "urbannav-sr",
+    "ms-swift"
+  ],
+  "components": {
+    "urbannav-sr": "7f99921b0bab3f6a1805c4a321aa5876dc1cedd0",
+    "ms-swift": "0dcac2449d7c56739e0aa840be1b49b18fb3cb1",
+    "cosmos-framework": null,
+    "research-workflow": "ae27be5190372bcb76c44b2cdffee06a4ff3bed4"
+  },
+  "artifacts": {
+    "remote_release_manifest": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-cosmos3-release-20260831/release_manifest_v2.json",
+      "sha256": "b0ad2cf898d7d21a0a2348e8106a60ad60d312b6f15d64cda4d8780fca5c5c46"
+    },
+    "remote_provenance": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-cosmos3-release-20260831/provenance_v2.json",
+      "sha256": "f411f431fe71270dff89fdf3f5eb12f60def9240f07510700d9f10c7538e771a"
+    },
+    "stage_ii_scorecard": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-stage-ii-final-quality-20260831/evaluation/stage_ii_scorecard.json",
+      "sha256": "73510df25306b0dd889199c397764012d61180ca1c0f4c227dda247022af361b"
+    },
+    "stage_ii_metrics": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-stage-ii-final-quality-20260831/evaluation/metrics.jsonl",
+      "sha256": "ac554fc250ce83ec8e863eeddee4bdd66893105b1f74eb2711656e93c0855541",
+      "rows": 11766
+    },
+    "stage_ii_evaluator_source": {
+      "path": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/cosmos3_test_20260824/ms-swift/swift/sidewalk_nav/cli/eval_stage_ii_cfm.py",
+      "sha256": "ef2e9ae381d5c9c4da366c4ac0e25e869b6d71ab07aea5bc112788e74ef916af"
+    },
+    "stage_ii_inference_receipt": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-stage-ii-final-quality-20260831/inference_receipt.json",
+      "sha256": "16f3da6a4a486dfb5eb73239165c120629865f273b12137279f8e81392c2d1b8"
+    },
+    "stage_i_target_free_receipt": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/VLA-stage-i-target-free-20260830/stage_i_target_free_validation_receipt.json",
+      "sha256": "1f0b9efaee71888b3c2194f5294e9e97bb9c9f1810480a62e3f8a14e1cc878c0"
+    },
+    "fusedadam_receipt": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-fusedadam-abi-check-20260831/receipt.json",
+      "sha256": "db3d56a52679b9f8d352c82964bfde5de7d895d7aec285c7a6dcadd3a6f63671"
+    },
+    "checkpoint_selection_receipt": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/VLA-convergence-r3-20260830/checkpoint_selection_receipt.json",
+      "sha256": "6dfa76ca1a17cd1eb6fc05875f93bd88f86220c5e0f3d2a2a85709b3240811b6"
+    },
+    "cosmos3_v1_release_audit": {
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/evidence/cosmos3-v1-release-audit-20260831.json",
+      "sha256": "dbf0a307a180d9cb2825e7c497eb9df2c0a870406512383757c12fcf26d4116f"
+    }
+  },
+  "gates": [
+    {
+      "id": "stage_ii_quality_metrics",
+      "required": true,
+      "passed": false,
+      "status": "structural_pass_quality_thresholds_unconfigured"
+    },
+    {
+      "id": "stage_ii_evaluator_contract",
+      "required": true,
+      "passed": true,
+      "status": "top_level_latency_sec_consumed"
+    },
+    {
+      "id": "stage_i_target_free_validation",
+      "required": true,
+      "passed": false,
+      "status": "semantic_contract_failure_root_cause_identified_no_rerun"
+    },
+    {
+      "id": "stage_i_stage_ii_linkage",
+      "required": true,
+      "passed": false,
+      "status": "blocked"
+    },
+    {
+      "id": "fusedadam_abi",
+      "required": true,
+      "passed": true,
+      "status": "training_environment_selected_abi_verified_inference_optimizer_not_applicable"
+    },
+    {
+      "id": "validation_best_checkpoint",
+      "required": false,
+      "passed": true,
+      "status": "final_only_v1_policy_accepted"
+    },
+    {
+      "id": "clean_primary_worktrees",
+      "required": true,
+      "passed": false,
+      "status": "user_wip_preserved"
+    },
+    {
+      "id": "cosmos_source_commit",
+      "required": true,
+      "passed": false,
+      "status": "derived_source_is_not_a_clean_commit"
+    },
+    {
+      "id": "cosmos_source_provenance",
+      "required": true,
+      "passed": true,
+      "status": "base_commit_plus_actual_content_digest_recorded"
+    },
+    {
+      "id": "gpu_process_cleanup",
+      "required": true,
+      "passed": true,
+      "status": "four_inference_processes_and_run_sessions_removed"
+    }
+  ],
+  "known_limitations": [
+    "Stage-II iter_000009000 full metrics are complete and structurally valid, but project-owned quality thresholds are not configured.",
+    "Stage-I target-free validation covers 3072 rows; reasoning and decision semantic parsing failed, so formal Stage-I-to-Stage-II linkage is blocked. The leading cause is the three-step Stage-I checkpoint; parser relaxation is not a fix.",
+    "Validation loss was best at iterations 4000 and 6000, but only final iter_000009000 was materialized; V1 final-only policy accepts the evaluated final checkpoint and makes no validation-best claim.",
+    "FusedAdam ABI import is verified in the selected clean training environment; an optimizer step was not executed because this release decision is environment-scoped. The inference venv does not need transformer_engine_torch because inference does not instantiate the optimizer.",
+    "Cosmos3 source provenance is bound to base commit c97662bc65e754f179d508f8bfeca3a79483cfe6 plus actual tracked content digest 21ef66e2ee4c71662e623e35134764131e8e12fe0a93c88308259df7908e5e52; the remote copy differs from the clean checkout in seven tracked files and lacks two baseline tests.",
+    "Existing local worktrees remain dirty by design; no reset, clean, commit, push, or deletion was performed."
+  ]
+}

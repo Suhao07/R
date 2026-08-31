@@ -1,0 +1,164 @@
+{
+  "schema_version": "cosmos3_v1_release_audit_v1",
+  "audit_id": "cosmos3-v1-release-audit-20260831",
+  "created_at": "2026-08-31",
+  "execution_policy": {
+    "gpu_work_started_this_turn": false,
+    "inference_or_training_rerun": false,
+    "remote_route": "bastion_12087_to_lixiang_31041",
+    "reason": "reuse existing receipts and metrics; avoid repeated GPU work"
+  },
+  "stage_ii": {
+    "existing_artifact": {
+      "metrics_path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-stage-ii-final-quality-20260831/evaluation/metrics.jsonl",
+      "metrics_sha256": "ac554fc250ce83ec8e863eeddee4bdd66893105b1f74eb2711656e93c0855541",
+      "row_count": 11766,
+      "input_profile": "fpv_temporal_v1",
+      "checkpoint": "iter_000009000",
+      "evaluator_source_sha256": "ef2e9ae381d5c9c4da366c4ac0e25e869b6d71ab07aea5bc112788e74ef916af"
+    },
+    "structural_gate": {
+      "status": "pass",
+      "checks": [
+        "11766 prediction/reference rows",
+        "finite direct-action [32,3] predictions",
+        "duplicate and missing identities absent",
+        "top-level latency fallback consumed"
+      ]
+    },
+    "quality_gate": {
+      "status": "unconfigured",
+      "decision": "cannot pass or fail a promotion threshold that the project has not defined",
+      "threshold_sources_checked": [
+        "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/Agent_part/RouteServer/config/evaluation/stage_ii_cfm_openloop_v1.json",
+        "/home/ubuntu/WorkSpace/project/SR/Code/Urban-Nav-SR/Agent_part/RouteServer/docs/OPENLOOP_BENCHMARK_V2_IMPLEMENTATION.md",
+        "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/swift/sidewalk_nav/cli/compare_cosmos3_urbannav_quality.py"
+      ],
+      "measured_metrics": {
+        "ADE": 0.8877066507506194,
+        "FDE": 1.6357428034027897,
+        "L2@1s": 0.5032057401400976,
+        "L2@2s": 0.8024136712771468,
+        "false_move_rate_given_stop": 1.0,
+        "false_freeze_rate_given_move": 0.0,
+        "smoothness_pred": 0.11041632554374006,
+        "smoothness_target": 0.033896766065064386,
+        "latency_mean_sec": 2.341474895468594
+      },
+      "scope_limits": [
+        "only egowalk dataset slice",
+        "direction label is unknown",
+        "physical false-move/false-freeze and route progress are not promotion gates while motion policy is not frozen"
+      ]
+    }
+  },
+  "stage_i": {
+    "existing_artifact": {
+      "receipt_path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/VLA-stage-i-target-free-20260830/stage_i_target_free_validation_receipt.json",
+      "receipt_sha256": "1f0b9efaee71888b3c2194f5294e9e97bb9c9f1810480a62e3f8a14e1cc878c0",
+      "rows": 3072,
+      "coverage": "3072/3072",
+      "checkpoint": "Qwen3-VL-8B-Instruct iter_000000003"
+    },
+    "parse_observations": {
+      "full_cot_strict_parse": "0/1024",
+      "reasoning_dropout_strict_parse": "0/1024",
+      "vqa_parse": "754/1024",
+      "failure_count": 2318,
+      "failure_rate": 0.7545572916666666,
+      "representative_contract_errors": [
+        "full_cot escaped closing tags and invalid response=continue_forward",
+        "reasoning_dropout emits XML child tags or fenced output instead of JSON body",
+        "vqa emits uppercase reason codes, free prose, extra fields and invalid JSON"
+      ]
+    },
+    "root_cause_analysis": {
+      "confirmed": [
+        "parser contract is strict and matches the declared prompts",
+        "training receipt contains only three optimizer steps",
+        "model outputs are semantically and structurally outside the declared contract"
+      ],
+      "leading_root_cause": "undertrained Stage-I checkpoint",
+      "secondary_factor": "decoding/training output canonicalization mismatch",
+      "uncertainty": "the receipts do not isolate undertraining from decoding settings with a controlled ablation",
+      "action": "do not relax the parser; no rerun is authorized in this audit"
+    },
+    "linkage_gate": {
+      "status": "blocked",
+      "reason": "Stage-I semantic outputs are not reliable enough to establish Stage-I-to-Stage-II linkage"
+    }
+  },
+  "checkpoint_policy": {
+    "validation_best_required_for_v1_final_only": false,
+    "decision": "accept evaluated final iter_000009000 for the V1 final-only artifact",
+    "observed_best": "iter_000004000/iter_000006000 validation loss was lower",
+    "limitation": "observed best was not materialized, so no best-checkpoint quality claim is made"
+  },
+  "fusedadam": {
+    "production_scope": "training_environment_only",
+    "receipt_path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-fusedadam-abi-check-20260831/receipt.json",
+    "training_python": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/venvs/cosmos3_fusedadam_py312_clean/bin/python",
+    "transformer_engine_version": "2.12.0",
+    "source_digest": "e5ceb5d93964b3732dd2c43282863fd1f1b468f54a03df20d058f29d9fe57f98",
+    "extension_digest": "83f0ef3c00326e9240ca92c4963dce5d2268c07003f3e54036c6fb187d204d1b",
+    "import_status": "pass",
+    "optimizer_step_status": "unverified",
+    "gate_decision": "pass_for_training_environment_abi_scope",
+    "inference_scope": "FusedAdam is optimizer-only; inference does not require transformer_engine_torch"
+  },
+  "cosmos_source_provenance": {
+    "actual_source": "/mnt/volumes/mind-eb-bd-ga/suh/UrbanNavigation/cosmos3_test_20260824/cosmos-framework",
+    "clean_base_checkout": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/clean-checkouts/vla-cosmos-clean-candidate",
+    "base_commit": "c97662bc65e754f179d508f8bfeca3a79483cfe6",
+    "base_tree": "ae281e7279ac26d04ebabbab0e0d8163a5af77b3",
+    "actual_tracked_content_digest": "21ef66e2ee4c71662e623e35134764131e8e12fe0a93c88308259df7908e5e52",
+    "comparison": {
+      "tracked_files": 981,
+      "matched": 972,
+      "mismatched": 7,
+      "missing_from_actual": 2,
+      "mismatched_paths": [
+        "URBANNAV_COSMOS3_IMPLEMENTATION_CHECKLIST.md",
+        "cosmos_framework/configs/base/defaults/reasoner.py",
+        "cosmos_framework/configs/base/reasoner/experiment/dataflow_roles_test.py",
+        "cosmos_framework/model/generator/omni_mot_model.py",
+        "cosmos_framework/scripts/convert_model_to_vlm_safetensors.py",
+        "inputs/prompt_upsampler/image_inputs/car_driving.jpg",
+        "inputs/prompt_upsampler/image_inputs/humanoid_robot.jpg"
+      ],
+      "missing_paths": [
+        "cosmos_framework/checkpoint/dcp_dataloader_metadata_test.py",
+        "cosmos_framework/checkpoint/validate_dataloader_cursor_resume_test.py"
+      ]
+    },
+    "status": "derived_from_base_commit_with_recorded_source_differences",
+    "release_claim": "the byte-level source used by the run is identified by base commit plus actual_tracked_content_digest; it is not claimed as a clean checkout"
+  },
+  "dirty_state_policy": {
+    "decision": "preserve user WIP; do not reset, clean, stash, commit or push",
+    "repositories": {
+      "ResearchWorkflow": "dirty release/evidence files and mechanical snapshot",
+      "ms-swift": "dirty Cosmos3 runner/experiment files and experiment records",
+      "SideWalkNavigation": "untracked workflow __pycache__",
+      "cosmos-framework": "dirty joint_dataloader and workflow STATUS"
+    }
+  },
+  "release_conclusion": {
+    "status": "blocked",
+    "blockers": [
+      "Stage-II numeric promotion thresholds are not configured",
+      "Stage-I semantic parse quality and Stage-I-to-Stage-II linkage remain blocked",
+      "primary and integration worktrees remain dirty by user decision"
+    ]
+  },
+  "generated_release_sidecars": {
+    "remote_provenance": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-cosmos3-release-20260831/provenance_v2.json",
+      "sha256": "f411f431fe71270dff89fdf3f5eb12f60def9240f07510700d9f10c7538e771a"
+    },
+    "remote_release_manifest": {
+      "path": "/mnt/volumes/ad-rl-trans-bd-ga/suh/UrbanNavigation/runs/vla-cosmos3-release-20260831/release_manifest_v2.json",
+      "sha256": "b0ad2cf898d7d21a0a2348e8106a60ad60d312b6f15d64cda4d8780fca5c5c46"
+    }
+  }
+}
