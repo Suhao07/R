@@ -24,7 +24,7 @@
   "artifacts": [
     {
       "id": "performance_receipt",
-      "path": "ResearchWorkflow/runs/urbannav_viz_perf_current_20260826.json",
+      "path": "runs/urbannav_viz_perf_current_20260826.json",
       "required": true,
       "exists": true
     },
