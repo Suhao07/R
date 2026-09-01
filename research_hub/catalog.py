@@ -27,7 +27,7 @@ MEDIA_SUFFIXES = {
 }
 EXPERIMENT_MEDIA_DIRS = {"charts", "images", "videos", "media"}
 EXPERIMENT_MEDIA_SUFFIXES = MEDIA_SUFFIXES | {".html", ".json", ".csv", ".md"}
-EXPERIMENT_ARTIFACT_DIRS = {"attention_maps", "paired_traces"}
+EXPERIMENT_ARTIFACT_DIRS = {"attention_maps", "paired_traces", "feature_traces"}
 EXPERIMENT_ARTIFACT_SUFFIXES = {".npz", ".json", ".jsonl"}
 RESTRICTED_SUFFIXES = {".safetensors", ".pt", ".pth", ".ckpt", ".bin", ".tar", ".gz", ".zip"}
 DOCUMENT_STATUS_RE = re.compile(r"^\|\s*状态\s*\|\s*([^|]+?)\s*\|\s*$", re.MULTILINE)
@@ -662,6 +662,7 @@ def _scan_experiments(
             "clearml_archive_record.json",
             "clearml_task_linkage.json", "clearml_evidence_binding.json",
             "attention_review_manifest.json", "diagnostics_manifest.json",
+            "feature_trace_review_manifest.json",
             "goal_sweep.json", "goal_sweep.predictions.npz",
             "temporal_intervention.json", "temporal_intervention.predictions.npz",
             "representation_report.json",

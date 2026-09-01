@@ -238,6 +238,10 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
         (root / name).write_bytes(b"{}" if name.endswith(".json") else b"npz")
     (root / "attention_maps").mkdir()
     (root / "attention_maps" / "decoder_step_0001.npz").write_bytes(b"npz")
+    (root / "feature_traces").mkdir()
+    (root / "feature_traces" / "sample.json").write_text("{}\n", encoding="utf-8")
+    (root / "feature_traces" / "sample.npz").write_bytes(b"npz")
+    (root / "feature_trace_review_manifest.json").write_text("{}\n", encoding="utf-8")
     (root / "images" / "case.jpg").write_bytes(b"jpg")
     second = hub_config.artifact_root / "bundle-2"
     second.mkdir()
@@ -263,6 +267,7 @@ def test_experiment_bundle_is_aggregated_and_routed_metadata_is_renderable(hub_c
     assert any(item["relative_path"] == "attention_review_manifest.json" for item in experiment["files"])
     assert any(item["relative_path"] == "goal_sweep.predictions.npz" for item in experiment["files"])
     assert any(item["relative_path"] == "attention_maps/decoder_step_0001.npz" for item in experiment["files"])
+    assert any(item["relative_path"] == "feature_traces/sample.npz" for item in experiment["files"])
     static = render_index(catalog, live=False)
     assert "const staticExperimentHref=item=>" in static
     assert "#experiment-" not in static
