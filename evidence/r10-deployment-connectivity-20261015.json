@@ -1,0 +1,85 @@
+{
+  "scope": "read_only_connectivity_and_platform_selection",
+  "inference_server": {
+    "route": "lpai-jump -> ssh-d.lpai.lixiang.com:32660",
+    "hostname": "lsm-a100-copy-0",
+    "observed_at": "2026-10-15T02:46:03.801647+00:00",
+    "connected": true,
+    "gpu_total_mib_each": 81920,
+    "gpu_used_mib": [
+      15713,
+      22728,
+      2928,
+      61410,
+      31529,
+      14098,
+      78749,
+      77541
+    ],
+    "gpu_utilization_percent": [
+      85,
+      0,
+      0,
+      89,
+      0,
+      0,
+      100,
+      0
+    ],
+    "exclusive_idle_gpu_confirmed": false,
+    "new_model_runs": 0,
+    "existing_d1_prediction_present": true,
+    "existing_d2_engine_present": true,
+    "engine_bytes": 330171340,
+    "model_or_engine_rehashed": false
+  },
+  "map_source": {
+    "app": "Amap",
+    "device_family": "iPhone/iPad",
+    "selection_source": "user explicitly selected iPhone/iPad after proposing Amap",
+    "os_version": null,
+    "capture_implementation": "pending OS version; real app screen capture with ROI and source-clock metadata",
+    "apple_platform_metadata": {
+      "RPBroadcastSampleHandler": {
+        "introduced_ios": "10.0",
+        "deprecated_ios": "27.0",
+        "message": "No longer supported"
+      },
+      "RPSystemBroadcastPickerView": {
+        "introduced_ios": "12.0",
+        "deprecated_ios": "27.0",
+        "message": "Use ScreenCaptureKit SCContentSharingPicker instead"
+      }
+    },
+    "official_sources": [
+      "https://developer.apple.com/tutorials/data/documentation/replaykit/rpbroadcastsamplehandler.json",
+      "https://developer.apple.com/tutorials/data/documentation/replaykit/rpsystembroadcastpickerview.json"
+    ]
+  },
+  "robot_maintenance": {
+    "reference_document": "/home/ubuntu/WorkSpace/research/code/ICRA2027/FWTW-go2/DEPLOYMENT_CHECKLIST.md:26",
+    "historical_ssh": "orin26@192.168.1.101:22",
+    "historical_chassis_bridge": "ws://192.168.1.102:9090",
+    "reference_route": "Mac Route B",
+    "route_memo_present": false,
+    "direct_ssh_result": "Connection timed out",
+    "mac_jump_ssh_result": "Operation timed out",
+    "mac_jump_platform": "Darwin",
+    "mac_route_destination": "192.168.0.0/16",
+    "mac_route_interface": "utun7",
+    "current_robot_identity_verified": false,
+    "network_configuration_changed": false,
+    "robot_programs_started": false,
+    "control_commands_sent": false
+  },
+  "checks_not_repeated": [
+    "native model forward",
+    "ONNX/TRT parity",
+    "full model hash",
+    "historical test suites"
+  ],
+  "next_required_inputs": [
+    "iOS/iPadOS version",
+    "current on-site Mac/robot network reachability or updated maintenance route"
+  ]
+}

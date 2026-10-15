@@ -1,0 +1,415 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "r10-deploy-20261014-d0-d2",
+  "workstream_id": "core-framework",
+  "objective": "Freeze r10 recovery loading and capture one real native forward, then export and compare the action subgraph using the saved native inputs without repeating established tests.",
+  "status": "native_and_subgraph_passed_followup_service_passed",
+  "implementation_state": "implemented",
+  "verification_level": "one_historical_native_onnx_trt_passed",
+  "validation_scope": "one_historical_target_free_input_gui_unverified",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_deployment_capture_20261014.md",
+  "repository_ids": [
+    "ms-swift",
+    "urbannav-contracts",
+    "urbannav-cosmos3",
+    "urbannav-dfopd",
+    "urbannav-agent-tools"
+  ],
+  "commands": [
+    "R10_DEPLOY_ROOT=<persistent-run-root> CUDA_VISIBLE_DEVICES=<one-currently-idle-gpu> bash examples/sidewalk_nav/deployment/run_r10_capture.sh d1",
+    "R10_DEPLOY_ROOT=<persistent-run-root> CUDA_VISIBLE_DEVICES=<one-currently-idle-gpu> bash examples/sidewalk_nav/deployment/run_r10_capture.sh d2"
+  ],
+  "commands_executed": true,
+  "remote": {
+    "route": "lpai-jump -> ssh-d.lpai.lixiang.com:32660",
+    "run_root": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2",
+    "python": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/envs/urbannav_ms_swift_v31/bin/python",
+    "dependency_status": "installed_exit0_imports_passed",
+    "gpu_processes_launched": 3,
+    "maximum_authorized_gpus": 4,
+    "planned_concurrent_gpus": 1,
+    "d1_wrapper_pid": 1768,
+    "gpu_index": 2,
+    "source_snapshot_frozen": true,
+    "source_archive_sha256": "7560a0b432894ff4f9c95048f2430f5c1127a02dc6607590259f369257b6822c",
+    "d1_started_at": "2026-10-14T13:56:00.586185+00:00",
+    "active_task_gpu_processes": 0,
+    "d1_exit_code": 1,
+    "d1_load_seconds": 20.730440432205796,
+    "d1_failure_stage": "query_data_collator_before_stage_i_model_forward",
+    "dependency_versions": {
+      "onnx": "1.17.0",
+      "onnxruntime": "1.22.1",
+      "tensorrt": "10.9.0.34",
+      "numpy_maintained": "1.26.4"
+    },
+    "attempt2": {
+      "run_root": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/attempt2_template_binding",
+      "wrapper_pid": 2043,
+      "gpu_index": 2,
+      "started_at": "2026-10-14T14:15:35.256556+00:00",
+      "patch_archive_sha256": "0f8fa887d4b1388e68decb77d33a2ab4f6c777645b5e476418bf59da6a428d97",
+      "d1_exit_code": 0,
+      "d1_finished_at": "2026-10-14T14:17:02.825213+00:00",
+      "d2_wrapper_pid": 2286,
+      "d2_gpu_index": 0,
+      "d2_started_at": "2026-10-14T14:17:54.702475+00:00",
+      "d1_scorecard": {
+        "status": "passed",
+        "scope": "one_historical_input_forward",
+        "rows": 1,
+        "dtype": "float32",
+        "load_seconds": 20.26059663295746,
+        "condition_seconds": 36.23553544469178,
+        "action_seconds": 0.05756453052163124,
+        "peak_memory_bytes": 45504007168,
+        "input_sha256": "798b3d6af19eb3c30520c4339f3d803f9c4b94568b517c30a22a23fe4fb01354",
+        "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+        "query_shape": [
+          1,
+          16,
+          2560
+        ],
+        "visual_shape": [
+          1,
+          6,
+          2560
+        ],
+        "trajectory_shape": [
+          32,
+          3
+        ],
+        "warmup_runs": 0,
+        "repeat_runs": 0,
+        "gui_gate_passed": false,
+        "physical_gate_passed": false
+      },
+      "onnx_parity": {
+        "status": "passed",
+        "backend": "onnx",
+        "scope": "one_captured_real_input",
+        "first_velocity": {
+          "status": "passed",
+          "shape": [
+            1,
+            32,
+            3
+          ],
+          "max_abs_error": 0.0002841949462890625,
+          "mean_abs_error": 6.854214007034898e-05,
+          "atol": 0.001,
+          "rtol": 0.001
+        },
+        "trajectory": {
+          "status": "passed",
+          "shape": [
+            1,
+            32,
+            3
+          ],
+          "max_abs_error": 0.0013183951377868652,
+          "mean_abs_error": 0.00021072656090836972,
+          "atol": 0.001,
+          "rtol": 0.001
+        },
+        "metric_max_abs_x_y_yaw": [
+          0.02163982391357422,
+          0.002383140381425619,
+          0.00017379596829414368
+        ],
+        "single_rollout_seconds": 0.17847567982971668,
+        "timing_scope": "cold_single_rollout_including_runtime_transfers",
+        "calls": 8,
+        "warmup_runs": 0,
+        "repeat_runs": 0,
+        "native_policy_rerun": false,
+        "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0"
+      },
+      "d2_exit_code": 0,
+      "d2_finished_at": "2026-10-14T14:21:25.855551+00:00",
+      "engine_sha256": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+      "engine_compatibility": {
+        "recorded_at": "2026-10-14T14:23:29.353115+00:00",
+        "node_port": 32660,
+        "gpu": "NVIDIA A100-SXM4-80GB, GPU-4b788b7e-6d96-5825-d878-b80fe457ade8, 535.230.02",
+        "torch_build": {
+          "__version__": "2.8.0+cu128",
+          "cuda": "12.8",
+          "git_version": "a1cb3cc05d46d198467bebbb6e8fba50a325d4e7"
+        },
+        "torch_version_file": "/lpai/volumes/mind-eb-bd-ga/suh/miniconda3/envs/qwen3/lib/python3.10/site-packages/torch/version.py",
+        "acceleration_dependencies": {
+          "tensorrt-cu12": "10.9.0.34",
+          "tensorrt_cu12_bindings": "10.9.0.34",
+          "onnx": "1.17.0",
+          "tensorrt_cu12_libs": "10.9.0.34",
+          "onnxruntime": "1.22.1"
+        },
+        "engine_sha256": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+        "engine_sha256_source": "engine build manifest; not rehashed",
+        "precision": "FP16 builder flag; fixed FP32 floating I/O",
+        "shape_contract": {
+          "action_dim": 3,
+          "batch_size": 1,
+          "dtype": "float32",
+          "flow_steps": 8,
+          "hidden_size": 2560,
+          "horizon_steps": 32,
+          "normalization_profile_digest": "091758430e8897c1f59e6c516b603815504056d472247879e31f66400162d821",
+          "output_tokens": 16,
+          "query_count": 16,
+          "role_count": 8,
+          "visual_input_dim": 2560,
+          "visual_token_count": 6
+        },
+        "scope": "Validated only on this A100 server with this software stack. No Orin, other GPU, other TensorRT version or hardware compatibility mode acceptance.",
+        "latency_scope": "one cold rollout; no steady-state percentiles; D1 head-only timing has a different module boundary"
+      },
+      "tensorrt_parity": {
+        "status": "passed",
+        "backend": "tensorrt",
+        "scope": "one_captured_real_input",
+        "first_velocity": {
+          "status": "passed",
+          "shape": [
+            1,
+            32,
+            3
+          ],
+          "max_abs_error": 0.00140468031167984,
+          "mean_abs_error": 0.0004937104531563818,
+          "atol": 0.02,
+          "rtol": 0.02
+        },
+        "trajectory": {
+          "status": "passed",
+          "shape": [
+            1,
+            32,
+            3
+          ],
+          "max_abs_error": 0.005324065685272217,
+          "mean_abs_error": 0.0011065806029364467,
+          "atol": 0.02,
+          "rtol": 0.02
+        },
+        "metric_max_abs_x_y_yaw": [
+          0.0873880386352539,
+          0.014301757328212261,
+          0.0008572079241275787
+        ],
+        "single_rollout_seconds": 0.008502764627337456,
+        "timing_scope": "cold_single_rollout_including_runtime_transfers",
+        "calls": 8,
+        "warmup_runs": 0,
+        "repeat_runs": 0,
+        "native_policy_rerun": false,
+        "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0"
+      }
+    }
+  },
+  "model": {
+    "directory": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_recovery_native_20261010_cpu",
+    "directory_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+    "identity_source": "prior_20261014_live_audit_reused_not_rehashed"
+  },
+  "dataset": {
+    "manifest": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/stage_ii_condition_matrix_r10_20260823_owner_scoped_r1/inputs/control.jsonl",
+    "one_based_line": 2,
+    "rows": 1,
+    "gui_provenance_verified": false
+  },
+  "artifacts": [
+    {
+      "name": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_deployment_capture_20261014.md",
+      "exists": true
+    },
+    {
+      "name": "remote_dependency_attempt3_log",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/dependency_install_attempt3.log",
+      "exists": null
+    },
+    {
+      "name": "d1_readback",
+      "path": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-d0-d1-attempt1-readback.txt",
+      "exists": true
+    },
+    {
+      "name": "d1_loaded_bundle",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/d1/loaded_bundle.json",
+      "exists": null
+    },
+    {
+      "name": "d1_failure",
+      "path": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/d1/failure.json",
+      "exists": null
+    },
+    {
+      "name": "attempt2_evidence_readback",
+      "path": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-attempt2-evidence.json",
+      "exists": true
+    },
+    {
+      "name": "attempt2_final_evidence",
+      "path": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-attempt2-final-evidence.json",
+      "exists": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "source_destination_authorization",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "d0_frozen_remote_loading_receipt",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "d1_real_native_trajectory",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "d2_real_condition_onnx_trt",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "d1_template_binding_fix_authorization",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "d1_app_gui_pairing",
+      "required": true,
+      "passed": false
+    }
+  ],
+  "known_limitations": [
+    "D0 and one historical-input D1/D2 engineering run passed; this does not complete the full D0-D5 deployment.",
+    "APP GUI pairing remains unverified; D3-D5 require live acquisition, robot interfaces, and on-site stop/takeover conditions.",
+    "TensorRT engine is validated only on the recorded A100 server/software stack; Orin and other hardware are unvalidated.",
+    "Latencies are single cold-rollout samples; D1 head timing and D2 adapter-plus-head timing have different boundaries. No steady-state rate or direct speedup ratio is claimed.",
+    "Historical tests, CPU loading gates, full model hashing, warmups and repeated latency runs were not rerun."
+  ],
+  "checks": {
+    "new_python_flake8": "passed",
+    "launcher_bash_n": "passed",
+    "experiment_record_structure": "passed",
+    "git_diff_check": "passed",
+    "portfolio_doctor": {
+      "validation_errors": 1,
+      "snapshot_drift": 11,
+      "evidence_path": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-final-portfolio-doctor.txt",
+      "scope": "Final documentation and artifact indexing; one existing artifact error and eleven preserved snapshot drifts."
+    },
+    "new_real_native_forward": "passed_once",
+    "historical_tests_rerun": false,
+    "new_onnx_rollout": "passed_once",
+    "new_tensorrt_rollout": "passed_once",
+    "reference_repositories": "No reference repository was modified; existing dirty state preserved."
+  },
+  "blocked_audit": {
+    "consecutive_goal_turns": 3,
+    "condition": "Automatic approval review rejected private source transfer; explicit destination authorization remains unanswered.",
+    "local_preparation_complete": true,
+    "remote_observed_at": "2026-10-14T13:37:06.519544+00:00",
+    "dependency_processes": [
+      1581,
+      1582
+    ],
+    "download_bytes": 190433280,
+    "download_retained": true,
+    "d1_started": false,
+    "d1_prediction_exists": false,
+    "source_snapshot_exists": false,
+    "other_external_inputs_missing": [
+      "APP GUI capture platform and paired input",
+      "robot connection and live interfaces",
+      "on-site stop and takeover conditions"
+    ],
+    "not_a_completed_deployment": true,
+    "resolved_by": "User explicitly authorized the previously listed source destinations."
+  },
+  "next_step": "See r10-service-20261015 for the completed one-request persistent integration and usage. Next investigate saved query/vision latency; no automatic repeated benchmark.",
+  "live_input_blocker": {
+    "first_recorded_after_d1_d2": "2026-10-14",
+    "consecutive_goal_turns": 1,
+    "missing": [
+      "iOS/iPadOS version and capture implementation",
+      "reachable maintained Mac/robot network route",
+      "synchronized FPV/Amap GUI provenance and capture clock",
+      "live sensor/odometry and control-ownership interfaces",
+      "on-site stop/takeover and motion limits"
+    ],
+    "full_deployment_complete": false,
+    "existing_user_input_request_pending": true,
+    "latest_audit": "Amap on iPhone/iPad selected. Historical maintenance login recovered from FWTW deployment checklist. Direct and Mac-jump SSH timed out; Mac route is utun7 for 192.168.0.0/16. Inference server connected and existing D1/D2 artifacts remain present.",
+    "goal_status": "waiting_for_ios_version_and_robot_network",
+    "previous_turn_classification": "progress: read-only D3 audit established missing production caller, physical clock source and maintenance login",
+    "current_turn_classification": "no execution progress: same required platform and robot inputs remain unanswered",
+    "active_job_wait": false,
+    "completed_prefix_preserved": true,
+    "scope_clarification_20261015": "These are downstream GUI and physical D3-D5 prerequisites. They do not block the model inference service plan or implementation using existing D1/D2 artifacts. The audit and goal-status strings above describe the earlier physical-input checkpoint."
+  },
+  "d3_readonly_audit": {
+    "status": "requires_live_platform_contract",
+    "production_control_loop": "ms-swift/swift/sidewalk_nav/runtime/live_control.py:16",
+    "production_caller_found": false,
+    "existing_capture_clock": "ms-swift/swift/sidewalk_nav/runtime/streaming.py uses ordinal/FPS replay time; physical acquisition timestamps require a sensor adapter",
+    "reference_config": "/home/ubuntu/WorkSpace/research/code/ICRA2027/FWTW-go2/config/realworld_orin26.yaml",
+    "reference_maintenance_login_confirmed": true,
+    "reference_model_contract": "LIMO [51,4] at 5 s; cannot replace r10 [32,3] at 4 s",
+    "live_topic_types_or_publishers_verified": false,
+    "robot_contacted": false,
+    "motion_commands_sent": false,
+    "new_gpu_runs": 0,
+    "checks_repeated": false,
+    "user_question": "Provide iOS/iPadOS version and restore or identify the current on-site Mac route to the robot network.",
+    "reference_maintenance_login": "orin26@192.168.1.101",
+    "reference_maintenance_source": "/home/ubuntu/WorkSpace/research/code/ICRA2027/FWTW-go2/DEPLOYMENT_CHECKLIST.md:26",
+    "current_robot_connection_verified": false
+  },
+  "connectivity_update_20261015": "/home/ubuntu/WorkSpace/project/SR/Code/ResearchWorkflow/evidence/r10-deployment-connectivity-20261015.json",
+  "checks_update_20261015": {
+    "scope": "connection and deployment documentation only",
+    "model_and_historical_tests_run": false,
+    "portfolio_doctor_rerun": false,
+    "reason": "No model or runtime implementation changed; preserve the existing doctor receipt and avoid redundant checks.",
+    "reference_repositories_modified": false
+  },
+  "priority_correction_20261015": {
+    "user_intent": "Clarify model input/output and edge inference readiness before APP/robot deployment details.",
+    "proven": "One complete native FP32 input/output on A100; separate ONNX/TRT action rollout from saved real conditions.",
+    "unproven": [
+      "single callable PyTorch vision/query plus TensorRT action inference entry",
+      "persistent end-to-end inference service readiness and actual latency",
+      "Orin/robot-local execution"
+    ],
+    "gui_robot_integration": "deferred until model inference entry is ready; existing platform choice retained",
+    "new_runs_this_turn": 0
+  },
+  "model_service_plan_20261015": {
+    "document": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Task/r10_persistent_inference_service.md",
+    "status": "planned_not_implemented_or_integration_validated",
+    "current_turn_scope": "documentation and static source inspection only",
+    "steps": [
+      "S1: freeze maintained config, five-frame contract and lossless D1 query/action request mapping",
+      "S2: connect shared PyTorch query/vision, existing TRT engine, Euler integration and metric output",
+      "S3: add persistent loopback service, launcher and example client",
+      "S4: one new full service request, compared to saved D1, with latency and memory evidence",
+      "S5: deliver reproducible startup and calling instructions before GUI/robot integration"
+    ],
+    "reuse": "existing native bundle, audited identity, source and contract overlays, frozen D1 input/reference and D2 engine/spec",
+    "acceptance_scope": "one complete integration request; no claim of steady-state latency, navigation quality, real APP GUI or Orin readiness",
+    "planned_concurrent_gpus": 1,
+    "new_gpu_runs": 0,
+    "repeated_model_tests": 0,
+    "historical_doctor_rerun": false,
+    "reference_repositories_modified": false
+  },
+  "service_followup_run": "r10-service-20261015"
+}

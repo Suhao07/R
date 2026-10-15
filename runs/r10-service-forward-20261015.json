@@ -1,0 +1,323 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "r10-service-forward-20261015",
+  "workstream_id": "core-framework",
+  "objective": "Fix native r10 deployment forward, effective vision budget and fast kernels, and verify integrated numerical behavior and latency.",
+  "status": "passed_model_service_running",
+  "implementation_state": "implemented",
+  "verification_level": "exact_reuse_parity_and_one_warm_request_under_500ms",
+  "validation_scope": "one_historical_dataset_clip_per_changed_configuration_and_one_warm_latency_sample",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_service_forward_optimization_20261015.md",
+  "repository_ids": [
+    "ms-swift"
+  ],
+  "commands_executed": true,
+  "parent_run_id": "r10-service-20261015",
+  "remote_run_root": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_forward_reuse_tensor_20261015",
+  "engine_rebuilt": false,
+  "native_lvlm_baseline_rerun": false,
+  "current_condition_cpu_action_references": 1,
+  "budget_variant_warm_seconds": 0.7945182602852583,
+  "query_input_tokens_before_budget_fix": 11988,
+  "query_input_tokens_after_budget_fix": 1485,
+  "historical_d1_max_x_difference_m": 1.7860641479492188,
+  "sustained_2hz_verified": false,
+  "physical_gate_passed": false,
+  "next_step": "Review saved trajectories and training image budget before any live-stream or physical acceptance; do not repeat inference.",
+  "commands": [
+    "R10_SERVICE_ROOT=<frozen-run-root> CUDA_VISIBLE_DEVICES=<verified-gpu> bash source/ms-swift/examples/sidewalk_nav/deployment/run_r10_service.sh",
+    "python source/ms-swift/examples/sidewalk_nav/deployment/accept_r10_service.py --phase prepare|accept --config <frozen-config>"
+  ],
+  "artifacts": [
+    {
+      "name": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_service_forward_optimization_20261015.md",
+      "exists": true,
+      "required": true
+    },
+    {
+      "name": "local_evidence",
+      "path": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-forward-repair-20261015/evidence.json",
+      "exists": true,
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "fast_kernels_and_effective_budget",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "visual_reuse_exact_condition",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "single_warm_request_under_500ms",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "sustained_2hz",
+      "required": false,
+      "passed": false
+    }
+  ],
+  "known_limitations": [
+    "Historical dataset clip, not APP GUI or live robot.",
+    "Effective image-budget fix changes resolution and produced a 1.786 m maximum x difference from the old high-resolution D1 trajectory.",
+    "Warm latency checks are single samples; no sustained-rate or percentile claim.",
+    "First reuse variant failed on mutable Qwen output; fixed by retaining tensor, mutation fixture and real integration passed. Failure preserved."
+  ],
+  "scorecard": {
+    "status": "passed",
+    "scope": "one_full_pytorch_trt_service_request_from_dataset_images",
+    "samples": 1,
+    "native_reference_rerun": false,
+    "engine_rebuilt": false,
+    "warmup_runs": 0,
+    "repeat_runs": 0,
+    "normalized_trajectory_comparison": {
+      "status": "passed",
+      "shape": [
+        32,
+        3
+      ],
+      "max_abs_error": 0.015157163143157959,
+      "mean_abs_error": 0.0018765134736895561,
+      "atol": 0.02,
+      "rtol": 0.02
+    },
+    "action_reference_mode": "current_condition",
+    "current_condition_reference_reused": true,
+    "historical_d1_metric_max_abs_x_y_yaw": [
+      1.7860641479492188,
+      0.17520998418331146,
+      0.021560877561569214
+    ],
+    "query_profile": {
+      "input_tokens": 1485,
+      "preprocess_seconds": 0.9572888556867838,
+      "forward_seconds": 5.5433349423110485,
+      "readout_seconds": 0.025108577683568,
+      "final_hidden_only": true,
+      "reused_query_vision": true
+    },
+    "condition_max_abs_errors": {
+      "query_hidden": 2.3157691955566406,
+      "visual_tokens": 0.6082639694213867,
+      "visual_mask": 0.0,
+      "role_ids": 0.0,
+      "time_offsets_sec": 0.0
+    },
+    "metric_max_abs_x_y_yaw": [
+      0.24878740310668945,
+      0.02342122793197632,
+      0.0009708032011985779
+    ],
+    "same_loaded_instance": true,
+    "server_latency_seconds": 6.728180766105652,
+    "client_timing": {
+      "seconds": 6.792643327265978,
+      "operation": "predict",
+      "automatic_retries": 0
+    },
+    "timing": {
+      "query_seconds": 6.5257323756814,
+      "vision_seconds": 0.029431739822030067,
+      "condition_save_seconds": 0.025859609246253967,
+      "trt_euler_seconds": 0.14268574491143227,
+      "postprocess_seconds": 0.004419123753905296
+    },
+    "memory": {
+      "torch_peak_allocated_bytes": 9651549184,
+      "torch_peak_reserved_bytes": 9745465344,
+      "device_used_after_request_bytes": 10631184384,
+      "device_scope": "whole GPU including TRT and other processes; not a process peak"
+    },
+    "device_memory_sampled_peak_mib": 10138.0,
+    "device_memory_scope": "250ms whole-GPU samples; includes TRT and other processes; not an exact process peak",
+    "ready_after_request": true,
+    "gui_gate_passed": false,
+    "physical_gate_passed": false
+  },
+  "warm_scorecard": {
+    "client_seconds": 0.40301491506397724,
+    "server_seconds": 0.38822368904948235,
+    "timing": {
+      "query_seconds": 0.37410870380699635,
+      "vision_seconds": 0.000661676749587059,
+      "condition_save_seconds": 0.005578815937042236,
+      "trt_euler_seconds": 0.006317870691418648,
+      "postprocess_seconds": 0.0015261508524417877
+    },
+    "query_profile": {
+      "input_tokens": 1485,
+      "preprocess_seconds": 0.24259978346526623,
+      "forward_seconds": 0.13110287301242352,
+      "readout_seconds": 0.0004060473293066025,
+      "final_hidden_only": true,
+      "reused_query_vision": true
+    },
+    "memory": {
+      "torch_peak_allocated_bytes": 9652319232,
+      "torch_peak_reserved_bytes": 9745465344,
+      "device_used_after_request_bytes": 10631184384,
+      "device_scope": "whole GPU including TRT and other processes; not a process peak"
+    },
+    "same_instance": true,
+    "total_requests": 2,
+    "warm_measurement_requests": 1,
+    "repeat_latency_samples": 0,
+    "prior_output_max_abs_difference": 0.0,
+    "single_request_within_500ms": true,
+    "sustained_2hz_verified": false,
+    "health_after": {
+      "pid": 5706,
+      "model_load_count": 1,
+      "engine_load_count": 1,
+      "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+      "engine_digest": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+      "load_seconds": 28.78022708557546,
+      "torch_allocated_bytes": 9407121920,
+      "torch_reserved_bytes": 9418309632,
+      "device_used_bytes": 10285154304,
+      "device_memory_scope": "whole GPU, including other processes",
+      "model_instance_id": 139684871195424,
+      "cuda_visible_devices": "1",
+      "torch_dtype": "bfloat16",
+      "attn_implementation": "sdpa",
+      "query_forward": "backbone_final_hidden_only",
+      "fast_linear_attention_required": true,
+      "vision_preprocessing": {
+        "max_ratio": 200,
+        "frame_factor": 2,
+        "fps": 2.0,
+        "fps_min_frames": 4,
+        "fps_max_frames": 768,
+        "image_max_token_num": 128,
+        "image_min_token_num": 4,
+        "spatial_merge_size": 2,
+        "video_max_token_num": 128,
+        "video_min_token_num": 128
+      },
+      "ready": true,
+      "busy": false,
+      "completed_requests": 2,
+      "failure": null
+    }
+  },
+  "completion_audit": {
+    "utc": "2026-10-15T12:07:56.032217+00:00",
+    "health": {
+      "pid": 5706,
+      "model_load_count": 1,
+      "engine_load_count": 1,
+      "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+      "engine_digest": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+      "load_seconds": 28.78022708557546,
+      "torch_allocated_bytes": 9407121920,
+      "torch_reserved_bytes": 9418309632,
+      "device_used_bytes": 10285154304,
+      "device_memory_scope": "whole GPU, including other processes",
+      "model_instance_id": 139684871195424,
+      "cuda_visible_devices": "1",
+      "torch_dtype": "bfloat16",
+      "attn_implementation": "sdpa",
+      "query_forward": "backbone_final_hidden_only",
+      "fast_linear_attention_required": true,
+      "vision_preprocessing": {
+        "max_ratio": 200,
+        "frame_factor": 2,
+        "fps": 2.0,
+        "fps_min_frames": 4,
+        "fps_max_frames": 768,
+        "image_max_token_num": 128,
+        "image_min_token_num": 4,
+        "spatial_merge_size": 2,
+        "video_max_token_num": 128,
+        "video_min_token_num": 128
+      },
+      "ready": true,
+      "busy": false,
+      "completed_requests": 2,
+      "failure": null
+    },
+    "source_hash_checks": {
+      "ms-swift/swift/sidewalk_nav/runtime/cached_query_condition.py": true,
+      "ms-swift/swift/sidewalk_nav/runtime/inference_service.py": true,
+      "ms-swift/examples/sidewalk_nav/deployment/accept_r10_service.py": true,
+      "ms-swift/examples/sidewalk_nav/deployment/run_r10_service.sh": true,
+      "ms-swift/examples/sidewalk_nav/deployment/r10_fast_forward_profile.json": true,
+      "ms-swift/docs/Experiments/r10_service_forward_optimization_20261015.md": true,
+      "ms-swift/swift/sidewalk_nav/runtime/policy_bundle.py": true
+    },
+    "retired_previous_budget_service": {
+      "pid": 4509,
+      "health_before": {
+        "pid": 4509,
+        "model_load_count": 1,
+        "engine_load_count": 1,
+        "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+        "engine_digest": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+        "load_seconds": 24.548890847712755,
+        "torch_allocated_bytes": 9407121920,
+        "torch_reserved_bytes": 9418309632,
+        "device_used_bytes": 20961951744,
+        "device_memory_scope": "whole GPU, including other processes",
+        "model_instance_id": 140231089096832,
+        "cuda_visible_devices": "0",
+        "torch_dtype": "bfloat16",
+        "attn_implementation": "sdpa",
+        "query_forward": "backbone_final_hidden_only",
+        "fast_linear_attention_required": true,
+        "vision_preprocessing": {
+          "max_ratio": 200,
+          "frame_factor": 2,
+          "fps": 2.0,
+          "fps_min_frames": 4,
+          "fps_max_frames": 768,
+          "image_max_token_num": 128,
+          "image_min_token_num": 4,
+          "spatial_merge_size": 2,
+          "video_max_token_num": 128,
+          "video_min_token_num": 128
+        },
+        "ready": true,
+        "busy": false,
+        "completed_requests": 2,
+        "failure": null
+      },
+      "signal": "SIGTERM"
+    },
+    "model_full_requests_this_repair": 6,
+    "successful_full_requests_this_repair": 5,
+    "failed_full_requests_this_repair": 1,
+    "engine_rebuilt": false,
+    "native_lvlm_baseline_rerun": false,
+    "one_new_cpu_action_reference": true,
+    "sustained_2hz_verified": false,
+    "physical_gate_passed": false
+  },
+  "local_runtime_source_hashes_match": {
+    "ms-swift/swift/sidewalk_nav/runtime/cached_query_condition.py": true,
+    "ms-swift/swift/sidewalk_nav/runtime/inference_service.py": true,
+    "ms-swift/examples/sidewalk_nav/deployment/accept_r10_service.py": true,
+    "ms-swift/examples/sidewalk_nav/deployment/run_r10_service.sh": true,
+    "ms-swift/examples/sidewalk_nav/deployment/r10_fast_forward_profile.json": true,
+    "ms-swift/swift/sidewalk_nav/runtime/policy_bundle.py": true
+  },
+  "local_evidence": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-forward-repair-20261015/evidence.json",
+  "model_runs": 6,
+  "successful_model_runs": 5,
+  "failed_model_runs": 1,
+  "delivery_git_identity": {
+    "repository": "ms-swift",
+    "commit": "89ff6b58c25b442472044a27c02b85a84f1c0c27",
+    "scope": "Post-validation source commit; frozen remote execution source remains identified by original hashes.",
+    "remaining_unrelated_dirty_paths": [
+      "examples/sidewalk_nav/cosmos3/stage_ii_edge.toml"
+    ]
+  }
+}

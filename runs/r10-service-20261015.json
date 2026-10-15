@@ -1,0 +1,172 @@
+{
+  "schema_version": "research_experiment_run_v1",
+  "run_id": "r10-service-20261015",
+  "workstream_id": "core-framework",
+  "objective": "One persistent PyTorch query/vision plus existing TRT action service, accepting a dataset clip and returning a trajectory.",
+  "status": "historical_service_passed_retired",
+  "implementation_state": "implemented",
+  "verification_level": "one_complete_service_request_passed",
+  "validation_scope": "one_historical_dataset_clip_pytorch_trt_service_not_gui_or_physical",
+  "experiment_record": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_service_integration_20261015.md",
+  "repository_ids": [
+    "ms-swift"
+  ],
+  "commands_executed": true,
+  "remote_run_root": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_20261015_attempt2",
+  "parent_run_id": "r10-deploy-20261014-d0-d2",
+  "new_cpu_tests": {
+    "passed": 4,
+    "historical_suites_rerun": false,
+    "initial_obstacles": "plugin collection failure and sandbox socket denial; only blocked HTTP test continued"
+  },
+  "model_runs": 1,
+  "engine_rebuilt": false,
+  "native_baseline_rerun": false,
+  "next_step": "Continue r10-service-forward-20261015; old evidence is retained, old server PID 1695 retired.",
+  "preflight_failure": "query_row has prompt/images; source timestamps belong to query_source; fixed before GPU load",
+  "model_load_count": 1,
+  "engine_load_count": 1,
+  "scorecard": {
+    "status": "passed",
+    "scope": "one_full_pytorch_trt_service_request_from_dataset_images",
+    "samples": 1,
+    "native_reference_rerun": false,
+    "engine_rebuilt": false,
+    "warmup_runs": 0,
+    "repeat_runs": 0,
+    "normalized_trajectory_comparison": {
+      "status": "passed",
+      "shape": [
+        32,
+        3
+      ],
+      "max_abs_error": 0.005324065685272217,
+      "mean_abs_error": 0.0011065806029364467,
+      "atol": 0.02,
+      "rtol": 0.02
+    },
+    "condition_max_abs_errors": {
+      "query_hidden": 0.0,
+      "visual_tokens": 0.0,
+      "visual_mask": 0.0,
+      "role_ids": 0.0,
+      "time_offsets_sec": 0.0
+    },
+    "metric_max_abs_x_y_yaw": [
+      0.0873880386352539,
+      0.014301757328212261,
+      0.0008572079241275787
+    ],
+    "same_loaded_instance": true,
+    "server_latency_seconds": 26.294751428067684,
+    "client_timing": {
+      "seconds": 26.339216509833932,
+      "operation": "predict",
+      "automatic_retries": 0
+    },
+    "timing": {
+      "query_seconds": 22.76974088139832,
+      "vision_seconds": 3.085736334323883,
+      "condition_save_seconds": 0.03731047548353672,
+      "trt_euler_seconds": 0.10722116380929947,
+      "postprocess_seconds": 0.29466908425092697
+    },
+    "memory": {
+      "torch_peak_allocated_bytes": 45504007168,
+      "torch_peak_reserved_bytes": 60236496896,
+      "device_used_after_request_bytes": 62996152320,
+      "device_scope": "whole GPU including TRT and other processes; not a process peak"
+    },
+    "device_memory_sampled_peak_mib": 60077.0,
+    "device_memory_scope": "250ms whole-GPU samples; includes TRT and other processes; not an exact process peak",
+    "ready_after_request": true,
+    "gui_gate_passed": false,
+    "physical_gate_passed": false
+  },
+  "health_after": {
+    "pid": 1695,
+    "model_load_count": 1,
+    "engine_load_count": 1,
+    "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+    "engine_digest": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+    "load_seconds": 19.90948656760156,
+    "torch_allocated_bytes": 18814204416,
+    "torch_reserved_bytes": 18838716416,
+    "device_used_bytes": 21585788928,
+    "device_memory_scope": "whole GPU, including other processes",
+    "model_instance_id": 140213312072160,
+    "cuda_visible_devices": "1",
+    "ready": true,
+    "busy": false,
+    "completed_requests": 1,
+    "failure": null
+  },
+  "local_evidence": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-service-20261015",
+  "delivery_client": "GET retrieved identical response; completed_requests remained 1",
+  "historical_checks_rerun": false,
+  "completion_audit": {
+    "verified_at": "2026-10-15T03:31:21.931839+00:00",
+    "health": {
+      "pid": 1695,
+      "model_load_count": 1,
+      "engine_load_count": 1,
+      "model_digest": "89a5d147c5455332e7b754280eef6af3bd0d5101e12d30804260220a34f2a9d0",
+      "engine_digest": "824da2bc012467096aa1f155b52bb4d6bb9ab7caeb2315d6d2c94bf549b01888",
+      "load_seconds": 19.90948656760156,
+      "torch_allocated_bytes": 18814204416,
+      "torch_reserved_bytes": 18838716416,
+      "device_used_bytes": 21585788928,
+      "device_memory_scope": "whole GPU, including other processes",
+      "model_instance_id": 140213312072160,
+      "cuda_visible_devices": "1",
+      "ready": true,
+      "busy": false,
+      "completed_requests": 1,
+      "failure": null
+    },
+    "status": "complete_service_goal",
+    "requirements": {
+      "configuration": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_20261015_attempt2/config.json",
+      "integrated_inference": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_20261015_attempt2/scorecard.json",
+      "persistent_service": "same live PID; model and engine loaded once; ready true",
+      "one_dataset_clip_request": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_20261015_attempt2/requests/dataset-clip-0001/response.json",
+      "usage_and_delivery_client": "/lpai/volumes/mind-eb-bd-ga/suh/UrbanNavigation/runs/r10_deploy_20261014_d0_d2/service_20261015_attempt2/USAGE.md"
+    },
+    "service_kept_running": true,
+    "new_model_requests_during_delivery": 0,
+    "delivery_document_sha256": {
+      "USAGE.md": "228dcac644aea0855dff8264ab3d5a8f28620a94474abd1a4c519f9e58d77ff1",
+      "final_experiment_record.md": "b5479be73f696c719fbf0c0808b918bf2218d423571ebdfd18a9821a24ecd14f"
+    }
+  },
+  "completion_receipt_local": "/home/ubuntu/.codex/visualizations/2026/10/14/01a13a44-ecc8-7490-acab-ba7d3714f8db/r10-service-20261015/completion_receipt.json",
+  "commands": [
+    "R10_SERVICE_ROOT=<frozen-run-root> CUDA_VISIBLE_DEVICES=<verified-gpu> bash source/ms-swift/examples/sidewalk_nav/deployment/run_r10_service.sh",
+    "python source/ms-swift/examples/sidewalk_nav/deployment/accept_r10_service.py --phase prepare|accept --config <frozen-config>"
+  ],
+  "artifacts": [
+    {
+      "name": "experiment_record",
+      "path": "/home/ubuntu/WorkSpace/project/SR/Code/ms-swift/docs/Experiments/r10_service_integration_20261015.md",
+      "exists": true,
+      "required": true
+    }
+  ],
+  "gates": [
+    {
+      "id": "one_full_service_request",
+      "required": true,
+      "passed": true
+    },
+    {
+      "id": "realtime_latency",
+      "required": false,
+      "passed": false
+    }
+  ],
+  "known_limitations": [
+    "Historical FP32/eager single cold request: 26.29 seconds; retired during forward repair.",
+    "The declared 128 image-token budget was not applied in the old native processor loader.",
+    "No APP GUI, Orin or physical navigation validation."
+  ]
+}
